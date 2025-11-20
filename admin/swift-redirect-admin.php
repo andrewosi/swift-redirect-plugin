@@ -8,6 +8,8 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
     class SF_SwiftRedirectAdmin{
 
+        private $manifest_entry = null;
+
         function __construct(){
             $this->swiftRedirect_init();
         }
@@ -26,6 +28,18 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
         }
 
+        private function swiftRedirect_guard_request() : void{
+            if ( ! current_user_can( 'manage_options' ) ) {
+                wp_send_json( array( 'status' => 'error', 'message' => __( 'Insufficient permissions.', 'swift-redirect' ) ), 403 );
+            }
+
+            $nonce = isset( $_SERVER['HTTP_X_WP_NONCE'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_WP_NONCE'] ) ) : '';
+
+            if ( empty( $nonce ) || ! wp_verify_nonce( $nonce, 'swiftRedirect-nonce' ) ) {
+                wp_send_json( array( 'status' => 'error', 'message' => __( 'Unauthorized.', 'swift-redirect' ) ), 401 );
+            }
+        }
+
         public function swiftRedirect_script_enqueue() : void{
             $screen = get_current_screen();
             if ($screen->id == 'toplevel_page_swift-redirect') {
@@ -34,11 +48,41 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
                     'nonce' => wp_create_nonce('swiftRedirect-nonce'),
                 ];
 
-                wp_register_script('swiftRedirect-script-boot', plugin_dir_url(SWIFT_REDIRECT_FILE) . 'public-script/js/main.js', array(), null, true, 'module');
+                $asset = $this->swiftRedirect_get_manifest_entry();
 
-                wp_enqueue_script('swiftRedirect-script-boot');
+                if ( empty( $asset ) || empty( $asset['file'] ) ) {
+                    return;
+                }
+
+                $plugin_url  = plugin_dir_url( SWIFT_REDIRECT_FILE );
+                $plugin_path = plugin_dir_path( SWIFT_REDIRECT_FILE );
+
+                $script_path = $plugin_url . 'public-script/' . ltrim( $asset['file'], '/' );
+                $script_file = $plugin_path . 'public-script/' . ltrim( $asset['file'], '/' );
+                $version = file_exists( $script_file ) ? filemtime( $script_file ) : false;
+
+                wp_register_script(
+                    'swiftRedirect-script-boot',
+                    $script_path,
+                    array(),
+                    $version,
+                    true
+                );
+
+                if ( ! empty( $asset['css'] ) && is_array( $asset['css'] ) ) {
+                    foreach ( $asset['css'] as $index => $css_file ) {
+                        $css_handle = sprintf( 'swiftRedirect-style-%s', $index );
+                        $css_path   = $plugin_url . 'public-script/' . ltrim( $css_file, '/' );
+                        $css_file_path = $plugin_path . 'public-script/' . ltrim( $css_file, '/' );
+                        $css_version = file_exists( $css_file_path ) ? filemtime( $css_file_path ) : false;
+                        wp_register_style( $css_handle, $css_path, array(), $css_version );
+                        wp_enqueue_style( $css_handle );
+                    }
+                }
 
                 wp_localize_script('swiftRedirect-script-boot', 'admin_app_vars', $arr);
+
+                wp_enqueue_script('swiftRedirect-script-boot');
 
                 wp_enqueue_style('material-icon-set', 'https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons', [], true);
 //                wp_enqueue_script('swiftRedirect-fontawesome', plugin_dir_url(SWIFT_REDIRECT_FILE).'public-script/js/fontawesome.js', array(), true);
@@ -94,13 +138,20 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
         public function get_swiftRedirect_del_tables(){
            
-            return wp_send_json( array('status' => 'error', 'del_tables' => get_option('sf_swiftRedirect_del_tables')), 200 );
+            $this->swiftRedirect_guard_request();
+
+            return wp_send_json( array('status' => 'success', 'del_tables' => (int) get_option('sf_swiftRedirect_del_tables')), 200 );
         }
 
         public function set_swiftRedirect_del_tables(){
-            $request =  json_decode(file_get_contents('php://input'), true)['new_value'];
-            
-            return wp_send_json( array('status' => 'error', 'del_tables' => update_option('sf_swiftRedirect_del_tables', $request, 'yes')), 200 );
+            $this->swiftRedirect_guard_request();
+
+            $request_body = $this->swiftRedirect_get_json_input();
+            $new_value = isset( $request_body['new_value'] ) ? absint( $request_body['new_value'] ) : 0;
+
+            update_option('sf_swiftRedirect_del_tables', $new_value, 'yes');
+
+            return wp_send_json( array('status' => 'success', 'del_tables' => (int) get_option('sf_swiftRedirect_del_tables')), 200 );
         }
 
         public function swiftRedirect_admin_menu() : void{
@@ -130,6 +181,8 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
         public function swiftRedirect_export(){
 
+            $this->swiftRedirect_guard_request();
+
             $to_export = $this->swiftRedirect_format_json();
             header('Content-Disposition: attachment; filename="swift-redirect-'.gmdate('d-m-Y').'.json"');
 
@@ -139,17 +192,13 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
         public function swiftRedirect_import(){
 
-            if ( !isset($_SERVER['HTTP_X_WP_NONCE']) || !wp_verify_nonce( sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_WP_NONCE'] ) ), 'swiftRedirect-nonce' ) )  {
-
-                return wp_send_json( array('status' => 'error', 'message' => 'Unauthorized.'), 401 );
-
-            }
+            $this->swiftRedirect_guard_request();
 
             header('X-WP-Nonce: ' . wp_create_nonce('swiftRedirect-nonce'));
 
-            $request =  json_decode(file_get_contents('php://input'), true);
+            $request =  $this->swiftRedirect_get_json_input();
 
-            $new_redirects = $request['new_redirects'];
+            $new_redirects = isset( $request['new_redirects'] ) ? (array) $request['new_redirects'] : array();
             SF_SwiftRedirectInstance::createRedirect($new_redirects);
 
         }
@@ -164,22 +213,15 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
         public function swiftRedirect_endpoint(){
 
-            if ( !isset($_SERVER['HTTP_X_WP_NONCE']) || !wp_verify_nonce( sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_WP_NONCE'] ) ), 'swiftRedirect-nonce' ) )  {
-
-                return wp_send_json( array('status' => 'error', 'message' => 'Unauthorized.'), 401 );
-
-            }
+            $this->swiftRedirect_guard_request();
 
             header('X-WP-Nonce: ' . wp_create_nonce('swiftRedirect-nonce'));
 
-            $method = $_SERVER['REQUEST_METHOD'];
+            $method = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ?? 'GET' ) );
 
             switch ($method) {
                 case "GET":
-                    $input_vars = array(
-                        'offset' => $_GET['offset'],
-                        'limit' => $_GET['limit']
-                    );
+                    $input_vars = $this->swiftRedirect_get_pagination_from_request();
                     try{
                         
                         $data = self::swiftRedirectsWithPagination($input_vars);
@@ -193,22 +235,19 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
                     break;
                 case "POST":
-
-                        $new_redirects = json_decode(file_get_contents('php://input'), true)['new_redirects'];
+                        $request_body = $this->swiftRedirect_get_json_input();
+                        $new_redirects = isset( $request_body['new_redirects'] ) ? (array) $request_body['new_redirects'] : array();
                         SF_SwiftRedirectInstance::createRedirect($new_redirects);
-
                     break;
                 case "PUT":
-
-                        $update_redirects = json_decode(file_get_contents('php://input'), true)['update_redirects'];
+                        $request_body = $this->swiftRedirect_get_json_input();
+                        $update_redirects = isset( $request_body['update_redirects'] ) ? (array) $request_body['update_redirects'] : array();
                         SF_SwiftRedirectInstance::updateRedirect($update_redirects);
-
                     break;
                 case "DELETE":
-
-                        $ids_to_remove = json_decode(file_get_contents('php://input'), true)['ids_to_remove'];
+                        $request_body = $this->swiftRedirect_get_json_input();
+                        $ids_to_remove = isset( $request_body['ids_to_remove'] ) ? (array) $request_body['ids_to_remove'] : array();
                         SF_SwiftRedirectInstance::deleteRedirect($ids_to_remove);
-
                     break;
             }
         }
@@ -285,21 +324,14 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
         public function swiftRedirect_log(){
 
-            if ( !isset($_SERVER['HTTP_X_WP_NONCE']) || !wp_verify_nonce( sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_WP_NONCE'] ) ), 'swiftRedirect-nonce' ) )  {
-
-                return wp_send_json( array('status' => 'error', 'message' => 'Unauthorized.'), 401 );
-
-            }
+            $this->swiftRedirect_guard_request();
 
             header('X-WP-Nonce: ' . wp_create_nonce('swiftRedirect-nonce'));
 
-            $method = $_SERVER['REQUEST_METHOD'];
+            $method = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ?? '' ) );
 
             if(!empty($method)){
-                $input_vars = array(
-                    'offset' => $_GET['offset'],
-                    'limit' => $_GET['limit']
-                );
+                $input_vars = $this->swiftRedirect_get_pagination_from_request();
                 try{
 
                     global $wpdb;
@@ -345,15 +377,11 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
         public function swiftRedirect_404(){
 
-            if ( !isset($_SERVER['HTTP_X_WP_NONCE']) || !wp_verify_nonce( sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_WP_NONCE'] ) ), 'swiftRedirect-nonce' ) )  {
-
-                return wp_send_json( array('status' => 'error', 'message' => 'Unauthorized.'), 401 );
-
-            }
+            $this->swiftRedirect_guard_request();
 
             header('X-WP-Nonce: ' . wp_create_nonce('swiftRedirect-nonce'));
 
-            $method = $_SERVER['REQUEST_METHOD'];
+            $method = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ?? '' ) );
 
             global $wpdb;
             $table_name = $wpdb->prefix . SWIFT_REDIRECT_404_LIST_TABLE;
@@ -361,8 +389,9 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
             switch ($method) {
                 case "GET":
                     try{
-                        $limit = $_GET['limit'];
-                        $offset = $_GET['offset'];
+                        $pagination = $this->swiftRedirect_get_pagination_from_request();
+                        $limit = $pagination['limit'];
+                        $offset = $pagination['offset'];
     
                         $result = array();
     
@@ -398,11 +427,17 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
                     break;
                 case "PUT":
                     
-                        $add_to_redirects = json_decode(file_get_contents('php://input'), true)['add_to_redirects'];
+                        $request_body = $this->swiftRedirect_get_json_input();
+                        $add_to_redirects = isset( $request_body['add_to_redirects'] ) ? $request_body['add_to_redirects'] : array();
+                        list( $row_id, $row_data ) = $this->swiftRedirect_sanitize_404_row( $add_to_redirects );
+
+                        if ( 0 === $row_id || empty( $row_data ) ) {
+                            return wp_send_json( array('status' => 'error', 'message' => __( 'Invalid payload.', 'swift-redirect' )), 400 );
+                        }
                         
                         try{
                             
-                            $wpdb->update($table_name , $add_to_redirects, array('id' => $add_to_redirects['id']));
+                            $wpdb->update($table_name , $row_data, array('id' => $row_id));
                 
                         } catch (Exception $ex) {
                 
@@ -410,11 +445,79 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
                 
                         }
                 
-                        return wp_send_json( array('status' => 'success', 'data' => $redirects), 200 );
+                        return wp_send_json( array('status' => 'success', 'data' => $row_data), 200 );
 
                     break;
             }
 
+        }
+
+        private function swiftRedirect_get_manifest_entry() : array {
+            if ( null !== $this->manifest_entry ) {
+                return $this->manifest_entry;
+            }
+
+            $manifest_path = trailingslashit( plugin_dir_path( SWIFT_REDIRECT_FILE ) ) . 'public-script/manifest.json';
+
+            if ( ! file_exists( $manifest_path ) ) {
+                $this->manifest_entry = array();
+                return $this->manifest_entry;
+            }
+
+            $manifest_content = file_get_contents( $manifest_path );
+            $manifest = json_decode( $manifest_content, true );
+
+            if ( ! is_array( $manifest ) || empty( $manifest['src/main.ts'] ) ) {
+                $this->manifest_entry = array();
+                return $this->manifest_entry;
+            }
+
+            $this->manifest_entry = $manifest['src/main.ts'];
+
+            return $this->manifest_entry;
+        }
+
+        private function swiftRedirect_get_json_input() : array {
+            $raw_body = file_get_contents('php://input');
+
+            if ( empty( $raw_body ) ) {
+                return array();
+            }
+
+            $decoded = json_decode( $raw_body, true );
+
+            return is_array( $decoded ) ? $decoded : array();
+        }
+
+        private function swiftRedirect_get_pagination_from_request() : array {
+            $limit = isset( $_GET['limit'] ) ? absint( wp_unslash( $_GET['limit'] ) ) : 15;
+            $offset = isset( $_GET['offset'] ) ? absint( wp_unslash( $_GET['offset'] ) ) : 0;
+
+            if ( $limit <= 0 ) {
+                $limit = 15;
+            }
+
+            $limit = min( $limit, 200 );
+
+            return array(
+                'limit' => $limit,
+                'offset' => $offset,
+            );
+        }
+
+        private function swiftRedirect_sanitize_404_row( $row ) : array {
+            $row_id = isset( $row['id'] ) ? absint( $row['id'] ) : 0;
+            $data = array();
+
+            if ( isset( $row['is_redirect'] ) ) {
+                $data['is_redirect'] = absint( $row['is_redirect'] );
+            }
+
+            if ( isset( $row['count_of_requests'] ) ) {
+                $data['count_of_requests'] = absint( $row['count_of_requests'] );
+            }
+
+            return array( $row_id, $data );
         }
 
     }

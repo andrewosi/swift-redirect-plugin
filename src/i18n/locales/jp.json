@@ -59,8 +59,23 @@
     "is-redirect": "リダイレクト",
     "is-not-redirect": "404"
   },
+  "bulk_actions": {
+    "activate": "有効化",
+    "deactivate": "無効化",
+    "delete": "削除",
+    "placeholder": "一括アクション"
+  },
   "support-us": "サポートしてください",
   "del_tables": "プラグインをアンインストールする際にデータベースからテーブルを削除しますか？",
   "success-import": "データベースのインポートが成功しました！ :)",
-  "success-destroy-all": "すべてのリダイレクトが正常に削除されました :)"
+  "success-destroy-all": "すべてのリダイレクトが正常に削除されました :)",
+  "success-post": "リダイレクトを正常に作成しました :)",
+  "success-update": "リダイレクトを正常に更新しました :)",
+  "error-update": "リダイレクトを更新できませんでした :(",
+  "error-delete": "リダイレクトを削除できませんでした :(",
+  "placeholders": {
+    "domain": "mydomain.com",
+    "path": "/path/example",
+    "target_url": "https://mysite.com/example/target"
+  }
 }

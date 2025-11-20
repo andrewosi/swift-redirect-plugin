@@ -78,18 +78,16 @@
 
   onMounted(async () => {
     const valueInDb = await resource.get_del_row_value()
-    if (valueInDb.del_tables === '0' || valueInDb.del_tables === '' || valueInDb.del_tables === null) {
-      delTables.value = false
-    } else {
-      delTables.value = true
-    }
+    const delTablesSetting = Number(valueInDb.del_tables)
+    delTables.value = delTablesSetting === 1
   })
 </script>
 
 <template>
-  <VaCard>
-    <VaCardTitle>{{ t('menu.settings') }}</VaCardTitle>
-    <VaCardContent class="flex">
+  <div class="settings has-loading-overlay">
+    <VaCard>
+      <VaCardTitle>{{ t('menu.settings') }}</VaCardTitle>
+      <VaCardContent class="flex">
       <div class="flex flex-direction-column justify-between">
         <VaFileUpload
           v-model="file"
@@ -126,24 +124,28 @@
         </div>
         <img :src="bmc_qr" alt="buy me a coffee qr" class="bmc_qr" />
       </div>
-    </VaCardContent>
-  </VaCard>
+      </VaCardContent>
+    </VaCard>
 
-  <VaModal
-    class="modal-crud"
-    :model-value="!!destroyAllModal"
-    :title="t('modals.sure')"
-    :ok-text="t('modals.destroy')"
-    size="small"
-    close-button
-    @ok="destroyAllRedirects()"
-    @cancel="destroyAllModal = false"
-  >
-    <h3 class="va-h3">
-      {{ t('modals.destroy-all-prompt') }}
-    </h3>
-  </VaModal>
-  <ScrollToTop />
+    <VaModal
+      class="modal-crud"
+      :model-value="!!destroyAllModal"
+      :title="t('modals.sure')"
+      :ok-text="t('modals.destroy')"
+      size="small"
+      close-button
+      @ok="destroyAllRedirects()"
+      @cancel="destroyAllModal = false"
+    >
+      <h3 class="va-h3">
+        {{ t('modals.destroy-all-prompt') }}
+      </h3>
+    </VaModal>
+    <VaOverlay :model-value="classInstance.isLoading.value" class="loading-overlay" :color="'rgba(0,0,0,0.45)'">
+      <VaProgressCircular indeterminate size="large" />
+    </VaOverlay>
+    <ScrollToTop />
+  </div>
 </template>
 <style>
   .support-us-text {
@@ -180,4 +182,5 @@
   .va-file-upload--dropzone .va-file-upload__field {
     justify-content: space-between;
   }
+
 </style>

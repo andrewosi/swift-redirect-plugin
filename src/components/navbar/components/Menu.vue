@@ -1,58 +1,96 @@
 <script setup>
-import { ref, defineAsyncComponent } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import NavigationRoutes from './NavigationRoutes'
+
 const { t } = useI18n()
-import HomeIcon from 'vue-ionicons/dist/ios-home.vue'
-import ListIcon from 'vue-ionicons/dist/md-list.vue'
-import SettingsIcon from 'vue-ionicons/dist/ios-settings.vue'
-import DangerIcon from 'vue-ionicons/dist/ios-warning.vue'
+const route = useRoute()
 
+const navigationItems = computed(() =>
+  NavigationRoutes.routes.map((navRoute) => ({
+    ...navRoute,
+    icon: navRoute.meta?.icon ?? '',
+  })),
+)
 
-const items = ref(NavigationRoutes.routes)
-const accordionValue = ref(Array(items.value.length).fill(false))
+const isRouteActive = (navRoute) => navRoute.name === route.name
 
-function isRouteActive(INavigationRoute) {
-  return INavigationRoute.name === useRoute().name
-}
+const linkStyles = (navRoute) => ({
+  color: isRouteActive(navRoute) ? 'var(--va-white)' : 'var(--va-primary)',
+})
 
+const iconColor = (navRoute) => (isRouteActive(navRoute) ? 'white' : 'primary')
 </script>
 
 <template>
-  <div class="d-flex gap-4 flex-wrap">
-    <div v-for="(route, idx) in items" :key="idx" class="d-flex gap-1">
-      <router-link
-          :style="isRouteActive(route) ? 'background-color: #2c82e0; color: #fff' : ''"
-          :to="route.children ? undefined : { name: route.name }"
-          class="navigation-route"
-      >
-        <HomeIcon v-if="idx === 0"/>
-        <ListIcon v-if="idx === 1"/>
-        <DangerIcon v-if="idx === 2"/>
-        <SettingsIcon v-if="idx === 3"/>
-
-        {{ t(route.displayName) }}
-        <va-icon v-if="route.children" :name="accordionValue[idx] ? 'expand_less' : 'expand_more'" />
-      </router-link>
-    </div>
+  <div class="navigation">
+    <router-link
+      v-for="navRoute in navigationItems"
+      :key="navRoute.name"
+      class="navigation-route"
+      :class="{ 'navigation-route--active': isRouteActive(navRoute) }"
+      :to="navRoute.children ? undefined : { name: navRoute.name }"
+      :style="linkStyles(navRoute)"
+    >
+      <va-icon
+        v-if="navRoute.icon"
+        :name="navRoute.icon"
+        size="small"
+        class="navigation-route__icon"
+        :class="{ 'navigation-route__icon--active': isRouteActive(navRoute) }"
+        aria-hidden="true"
+      />
+      <span class="navigation-route__label">{{ t(navRoute.displayName) }}</span>
+    </router-link>
   </div>
 </template>
 
 <style scoped>
-.navigation-route {
-  padding: 10px;
-  border-radius: 20px;
-  border: none;
+.navigation {
   display: flex;
-  align-items: center;
-  gap: 5px;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-.navigation-route .ion {
-  fill: #154ec1;
+.navigation-route {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  color: var(--va-primary);
+  background-color: transparent;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
-.router-link-active.navigation-route .ion {
-  fill: #fff;
+
+.navigation-route__icon {
+  color: var(--va-primary);
+  transition: color 0.2s ease;
+}
+
+.navigation-route__icon--active {
+  color: var(--va-white) !important;
+}
+
+.navigation-route__label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.navigation-route:hover {
+  background-color: rgba(21, 78, 193, 0.08);
+  color: var(--va-primary);
+}
+
+.navigation-route--active {
+  background-color: var(--va-primary);
+  color: var(--va-white);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.navigation-route--active .navigation-route__icon {
+  color: var(--va-white);
 }
 </style>

@@ -49,6 +49,14 @@ From your WordPress dashboard
 3. **Install and Activate** Swift Redirect from your Plugins page
 4. **Click** on the new menu item "Swift Redirect" and create your first Redirect!
 
+== Development ==
+
+1. **Install dependencies** – run `npm install` inside the plugin directory.
+2. **Local development** – run `npm run dev:watch` to keep building assets automatically while editing Vue components.
+3. **On-demand preview build** – run `npm run dev` for a single Vite build without watch mode.
+4. **Production build** – run `npm run build` to compile hashed assets into `public-script/` разом зі свіжим `manifest.json`.
+5. **WordPress environment** – плагін автоматично визначає `wp_get_environment_type()`, тож ручні правки файлів не потрібні при перемиканні середовищ.
+
 == Frequently Asked Questions ==
 
 = What kind of support do you provide? =

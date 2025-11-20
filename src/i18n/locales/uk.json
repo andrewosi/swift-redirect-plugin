@@ -61,8 +61,23 @@
     "is-redirect": "Редірект",
     "is-not-redirect": "404"
   },
+  "bulk_actions": {
+    "activate": "Активувати",
+    "deactivate": "Деактивувати",
+    "delete": "Видалити",
+    "placeholder": "Групові дії"
+  },
   "support-us": "Підтримати нас",
   "del_tables": "Видалити талиці з бази данних при видаленні плагіну?",
   "success-import": "Успішний імпорт Бази Даних! :)",
-  "success-destroy-all": "Усі Редіректи успішно видалено :)"
+  "success-destroy-all": "Усі Редіректи успішно видалено :)",
+  "success-post": "Редірект успішно створено :)",
+  "success-update": "Редірект успішно оновлено :)",
+  "error-update": "Не вдалося оновити редірект :(",
+  "error-delete": "Не вдалося видалити редірект :(",
+  "placeholders": {
+    "domain": "mydomain.com",
+    "path": "/path/example",
+    "target_url": "https://mysite.com/example/target"
+  }
 }

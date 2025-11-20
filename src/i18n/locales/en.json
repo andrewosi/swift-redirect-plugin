@@ -61,8 +61,23 @@
     "is-redirect": "Redirect",
     "is-not-redirect": "404"
   },
+  "bulk_actions": {
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "delete": "Delete",
+    "placeholder": "Bulk actions"
+  },
   "support-us": "Support Us",
   "del_tables": "Delete tables from the database when uninstalling the plugin?",
   "success-import": "Database import successful! :)",
-  "success-destroy-all": "All Redirects successfully deleted :)"
+  "success-destroy-all": "All Redirects successfully deleted :)",
+  "success-post": "Redirect successfully created :)",
+  "success-update": "Redirect successfully updated :)",
+  "error-update": "Could not update redirect :(",
+  "error-delete": "Could not delete redirect :(",
+  "placeholders": {
+    "domain": "mydomain.com",
+    "path": "/path/example",
+    "target_url": "https://mysite.com/example/target"
+  }
 }

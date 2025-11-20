@@ -59,8 +59,23 @@
     "is-redirect": "Weiterleitung",
     "is-not-redirect": "404"
   },
+  "bulk_actions": {
+    "activate": "Aktivieren",
+    "deactivate": "Deaktivieren",
+    "delete": "Löschen",
+    "placeholder": "Massenaktionen"
+  },
   "support-us": "Unterstützen Sie uns",
   "del_tables": "Tabellen aus der Datenbank löschen beim Deinstallieren des Plugins?",
   "success-import": "Datenbankimport erfolgreich! :)",
-  "success-destroy-all": "Alle Weiterleitungen erfolgreich gelöscht :)"
+  "success-destroy-all": "Alle Weiterleitungen erfolgreich gelöscht :)",
+  "success-post": "Weiterleitung erfolgreich erstellt :)",
+  "success-update": "Weiterleitung erfolgreich aktualisiert :)",
+  "error-update": "Weiterleitung konnte nicht aktualisiert werden :(",
+  "error-delete": "Weiterleitung konnte nicht gelöscht werden :(",
+  "placeholders": {
+    "domain": "mydomain.com",
+    "path": "/path/example",
+    "target_url": "https://mysite.com/example/target"
+  }
 }

@@ -38,3 +38,32 @@ pre {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.has-loading-overlay {
+  position: relative;
+}
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: opacity 0.2s ease-in-out;
+  pointer-events: none;
+}
+
+.loading-overlay[model-value='true'] {
+  pointer-events: all;
+}
+.loading-overlay[model-value="false"] {
+  z-index: -1;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.va-modal__dialog {
+  z-index: 21;
+}

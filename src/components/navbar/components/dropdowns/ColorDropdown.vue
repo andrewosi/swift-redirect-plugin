@@ -1,81 +1,73 @@
 <template>
-  <va-dropdown class="color-dropdown pointer" :offset="[13, 0]" stick-to-edges>
+  <va-dropdown class="color-dropdown pointer" :offset="[13, 8]" stick-to-edges>
     <template #anchor>
       <va-icon-color />
     </template>
 
-    <va-dropdown-content class="color-dropdown__content pl-8 pr-8 pt-2 pb-2">
-      <va-button-toggle
-        v-model="currentTheme"
-        class="color-dropdown__toggle"
-        :options="themeOptions"
-        outline
-        round
-        grow
-        size="small"
-      />
-      <VaColorPalette v-model="colors.primary" :palette="palette" style="margin-top: 10px" />
+    <va-dropdown-content class="color-dropdown__content">
+      <div class="color-dropdown__section">
+        <va-button-toggle
+          v-model="themeStore.currentTheme"
+          class="color-dropdown__toggle"
+          :options="themeStore.themeOptions"
+          outline
+          round
+          grow
+          size="small"
+          @update:model-value="themeStore.setTheme"
+        />
+      </div>
+      <div class="color-dropdown__section">
+        <VaColorPalette
+          v-model="themeStore.primaryColor"
+          :palette="palette"
+          @update:model-value="themeStore.setPrimaryColor"
+        />
+      </div>
     </va-dropdown-content>
   </va-dropdown>
 </template>
 
-<script setup lang="ts">
+<script setup>
   import VaIconColor from '../../../icons/VaIconColor.vue'
   import { useColors } from 'vuestic-ui'
-  import { ref, watchEffect, watch, onMounted } from 'vue'
+  import { useThemeStore } from '../../../../stores/theme'
 
-  const { presets, applyPreset, currentPresetName, colors } = useColors()
+  const { colors } = useColors()
+  const themeStore = useThemeStore()
 
-  const currentTheme = ref('light')
-  const currentThemeMode = ref('')
-
-  watchEffect(() => {
-    if (currentTheme.value !== 'light') {
-      localStorage.setItem('currentTheme', currentTheme.value)
-      applyPreset(currentTheme.value)
-      currentThemeMode.value = currentTheme.value
-    } else if(currentThemeMode.value === 'dark') {
-      localStorage.setItem('currentTheme', currentTheme.value)
-      applyPreset(currentTheme.value)
-    }
-  })
-  watch(
-    () => colors.primary,
-    (oldVal, newVal) => {
-      if (newVal !== oldVal && colors.primary !== '#3472F0') {
-        localStorage.setItem('colorsPrimary', colors.primary)
-      }
-    },
-  )
   const palette = ['#2c82e0', '#ef476f', '#ffd166', '#06d6a0', '#8338ec']
-  const themeOptions = Object.keys(presets.value).map((themeName) => ({
-    value: themeName,
-    label: themeName,
-  }))
 
-  onMounted(() => {
-    const localStorageTheme = localStorage.getItem('currentTheme')
-    const localStorageColor = localStorage.getItem('colorsPrimary')
-    if (localStorageTheme) {
-      currentTheme.value = localStorageTheme
-    }
-    if (localStorageColor) {
-      colors.primary = localStorageColor
-    }
-  })
-
+  // Синхронізувати primary color з store
+  import { watch } from 'vue'
+  watch(
+    () => themeStore.primaryColor,
+    (newColor) => {
+      colors.primary = newColor
+      document.documentElement.style.setProperty('--va-primary', newColor)
+    },
+    { immediate: true }
+  )
 </script>
 
 <style lang="scss" scoped>
   .color-dropdown {
-    &__icon {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-
     .va-dropdown__anchor {
       display: inline-block;
+      cursor: pointer;
+    }
+
+    &__content {
+      padding: 1rem;
+      min-width: 200px;
+    }
+
+    &__section {
+      margin-bottom: 1rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
     }
 
     &__toggle {
@@ -83,10 +75,5 @@
       display: flex;
       justify-content: stretch;
     }
-  }
-
-  .button-restore {
-    display: flex;
-    margin: 0.375rem auto;
   }
 </style>

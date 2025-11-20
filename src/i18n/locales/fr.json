@@ -59,8 +59,23 @@
     "is-redirect": "Redirection",
     "is-not-redirect": "404"
   },
+  "bulk_actions": {
+    "activate": "Activer",
+    "deactivate": "Désactiver",
+    "delete": "Supprimer",
+    "placeholder": "Actions groupées"
+  },
   "support-us": "Soutenez-nous",
   "del_tables": "Supprimer les tables de la base de données lors de la désinstallation du plugin ?",
   "success-import": "Importation de la base de données réussie ! :)",
-  "success-destroy-all": "Toutes les redirections ont été supprimées avec succès :)"
+  "success-destroy-all": "Toutes les redirections ont été supprimées avec succès :)",
+  "success-post": "Redirection créée avec succès :)",
+  "success-update": "Redirection mise à jour avec succès :)",
+  "error-update": "Impossible de mettre à jour la redirection :(",
+  "error-delete": "Impossible de supprimer la redirection :(",
+  "placeholders": {
+    "domain": "mydomain.com",
+    "path": "/path/example",
+    "target_url": "https://mysite.com/example/target"
+  }
 }

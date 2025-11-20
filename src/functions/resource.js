@@ -67,6 +67,7 @@ class Resource {
       url: '/wp-admin/admin-ajax.php?action=swift-redirect_export',
       method: 'GET',
       responseType: 'blob',
+      headers: headers,
     }).then((response) => {
       var fileURL = window.URL.createObjectURL(new Blob([response.data]))
       var fileLink = document.createElement('a')

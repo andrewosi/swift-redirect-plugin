@@ -29,32 +29,55 @@ class SF_SwiftRedirectInstance{
     {
         global $wpdb;
         $table_name = $wpdb->prefix . SWIFT_REDIRECT_RULE_LIST_TABLE;
+        $created = array();
+        $alreadyExist = array();
+        $invalid = array();
+
         try {
-            $created = array();
-            $alreadyExist = array();
-            foreach($redirects as &$redirect){
+            foreach($redirects as $redirect){
+                $prepared = self::prepareRedirectRow($redirect);
+
+                if ( is_wp_error( $prepared ) ) {
+                    $invalid[] = array(
+                        'item' => $redirect,
+                        'message' => $prepared->get_error_message(),
+                    );
+                    continue;
+                }
+
+                $data = $prepared['data'];
 
                 $checkIfExists = $wpdb->get_var(
                     $wpdb->prepare(
-                        "SELECT * FROM $table_name WHERE domain = %s AND `key` = %s",
-                        $redirect['domain'],
-                        $redirect['key']
+                        "SELECT id FROM $table_name WHERE domain = %s AND `key` = %s",
+                        $data['domain'],
+                        $data['key']
                     )
                 );
                 
                 if($checkIfExists === null){
-                    $result = $wpdb->insert(
+                    $wpdb->insert(
                         $table_name, 
-                        $redirect
+                        $data,
+                        array(
+                            '%s',
+                            '%s',
+                            '%d',
+                            '%d',
+                            '%d',
+                            '%s',
+                            '%d',
+                            '%d',
+                        )
                     );
     
                     $inserted_id = $wpdb->insert_id;
         
-                    $redirect['id'] = $inserted_id;
+                    $data['id'] = $inserted_id;
         
-                    array_push($created, $redirect);
+                    $created[] = $data;
                 }else{
-                    array_push($alreadyExist, $redirect);
+                    $alreadyExist[] = $data;
                 }
 
             }
@@ -64,7 +87,7 @@ class SF_SwiftRedirectInstance{
 
         }
 
-        return wp_send_json( array('status' => 'success', 'data' => $created, 'already_exist' => $alreadyExist ), 200 );
+        return wp_send_json( array('status' => 'success', 'data' => $created, 'already_exist' => $alreadyExist, 'invalid' => $invalid ), 200 );
     
     }
 
@@ -73,13 +96,45 @@ class SF_SwiftRedirectInstance{
 
         global $wpdb;
         $table_name = $wpdb->prefix . SWIFT_REDIRECT_RULE_LIST_TABLE;
+        $updated = array();
+        $invalid = array();
 
         try{
             
             foreach($redirects as $redirect){
 
-                $wpdb->update($table_name , $redirect, array('id' => $redirect['id']));
+                $prepared = self::prepareRedirectRow($redirect, true);
 
+                if ( is_wp_error( $prepared ) ) {
+                    $invalid[] = array(
+                        'item' => $redirect,
+                        'message' => $prepared->get_error_message(),
+                    );
+                    continue;
+                }
+
+                $data = $prepared['data'];
+                $row_id = $prepared['id'];
+
+                $wpdb->update(
+                    $table_name,
+                    $data,
+                    array('id' => $row_id),
+                    array(
+                        '%s',
+                        '%s',
+                        '%d',
+                        '%d',
+                        '%d',
+                        '%s',
+                        '%d',
+                        '%d',
+                    ),
+                    array('%d')
+                );
+
+                $data['id'] = $row_id;
+                $updated[] = $data;
             }
 
         } catch (Exception $ex) {
@@ -88,7 +143,7 @@ class SF_SwiftRedirectInstance{
 
         }
 
-        return wp_send_json( array('status' => 'success', 'data' => $redirects), 200 );
+        return wp_send_json( array('status' => 'success', 'data' => $updated, 'invalid' => $invalid), 200 );
 
     }
 
@@ -100,7 +155,13 @@ class SF_SwiftRedirectInstance{
 
         try {
             foreach($ids_to_remove as $id){
-                $result = $wpdb->delete(
+                $id = absint( $id );
+
+                if ( 0 === $id ) {
+                    continue;
+                }
+
+                $wpdb->delete(
                     $table_name,
                     array('id' => $id),
                     array('%d')
@@ -110,7 +171,7 @@ class SF_SwiftRedirectInstance{
             return wp_send_json( array('status' => 'error', 'message' => $ex->getMessage()), 500 );
         }
 
-        return wp_send_json(array('status' => 'success', 'message' => 'Redirect '. implode(',', $ids_to_remove) .' deleted'), 200);
+        return wp_send_json(array('status' => 'success', 'message' => 'Redirect '. implode(',', array_map('absint', $ids_to_remove)) .' deleted'), 200);
     }
 
     public function countRedirectsIncrement() : void
@@ -128,6 +189,55 @@ class SF_SwiftRedirectInstance{
             $count_of_redirects, $this->id
         ));
 
+    }
+
+    private static function prepareRedirectRow($redirect, $requires_id = false)
+    {
+        if ( ! is_array( $redirect ) ) {
+            return new WP_Error( 'swift_redirect_invalid', __( 'Invalid redirect payload.', 'swift-redirect' ) );
+        }
+
+        $domain = isset( $redirect['domain'] ) ? sanitize_text_field( wp_unslash( $redirect['domain'] ) ) : '';
+        $domain = strtolower( $domain );
+
+        $key = isset( $redirect['key'] ) ? sanitize_text_field( wp_unslash( $redirect['key'] ) ) : '';
+        $key = '/' . ltrim( $key, '/' );
+
+        $target_url = isset( $redirect['target_url'] ) ? esc_url_raw( $redirect['target_url'] ) : '';
+
+        if ( empty( $domain ) || empty( $key ) || empty( $target_url ) ) {
+            return new WP_Error( 'swift_redirect_required', __( 'Domain, key and target URL are required.', 'swift-redirect' ) );
+        }
+
+        $http_code = isset( $redirect['code'] ) ? absint( $redirect['code'] ) : 301;
+        $allowed_codes = array(301, 302, 303, 307, 308);
+        if ( ! in_array( $http_code, $allowed_codes, true ) ) {
+            $http_code = 301;
+        }
+
+        $count_of_redirects = isset( $redirect['count_of_redirects'] ) ? absint( $redirect['count_of_redirects'] ) : 0;
+
+        $data = array(
+            'domain' => $domain,
+            'key' => $key,
+            'is_regex' => isset( $redirect['is_regex'] ) ? absint( $redirect['is_regex'] ) : 0,
+            'is_enabled' => isset( $redirect['is_enabled'] ) ? absint( $redirect['is_enabled'] ) : 1,
+            'is_params' => isset( $redirect['is_params'] ) ? absint( $redirect['is_params'] ) : 0,
+            'target_url' => $target_url,
+            'code' => $http_code,
+            'count_of_redirects' => $count_of_redirects,
+        );
+
+        $row_id = isset( $redirect['id'] ) ? absint( $redirect['id'] ) : 0;
+
+        if ( $requires_id && 0 === $row_id ) {
+            return new WP_Error( 'swift_redirect_missing_id', __( 'Redirect ID is required.', 'swift-redirect' ) );
+        }
+
+        return array(
+            'id' => $row_id,
+            'data' => $data,
+        );
     }
 
 }

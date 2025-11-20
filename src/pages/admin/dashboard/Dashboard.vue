@@ -131,18 +131,19 @@
 </script>
 
 <template>
-  <div class="dashboard">
+  <div class="dashboard has-loading-overlay">
     <VaCard>
       <VaCardTitle>{{ t('tables.headings.total-redirects-done') }}: {{ countOfRedirects }}</VaCardTitle>
       <VaCardContent class="overflow-auto">
         <VaInput v-model="filter" class="sm:col-span-2 md:col-span-3" :placeholder="t('tables.filter')" />
-        <div v-if="selectedRedirects.length > 0" class="flex wrap align-start gap-2">
+        <div v-if="selectedRedirects.length > 10" class="flex wrap align-start gap-2">
           <div style="max-width: 200px">
             <VaSelect
               v-model="selectedAction"
-              text-by="action"
+              :text-by="(option) => (option?.action ? t(`bulk_actions.${option.action}`) : t('bulk_actions.placeholder'))"
               :value-by="(option) => ({ color: option.color, action: option.action })"
               :label="t('tables.headings.bulk-actions')"
+              :placeholder="t('bulk_actions.placeholder')"
               :options="bulkActions"
             />
           </div>
@@ -197,7 +198,7 @@
             </div>
           </template>
           <template #cell(count)="rowIndex">
-            <va-badge :text="rowIndex.rowKey.count_of_redirects" color="info" />
+            <va-badge :text="rowIndex.rowKey.count" color="info" />
           </template>
           <template #cell(is_enabled)="rowIndex">
             <va-badge
@@ -215,9 +216,10 @@
           <div style="max-width: 200px">
             <VaSelect
               v-model="selectedAction"
-              text-by="action"
+              :text-by="(option) => (option?.action ? t(`bulk_actions.${option.action}`) : t('bulk_actions.placeholder'))"
               :value-by="(option) => ({ color: option.color, action: option.action })"
               :label="t('tables.headings.bulk-actions')"
+              :placeholder="t('bulk_actions.placeholder')"
               :options="bulkActions"
             />
           </div>
@@ -272,7 +274,7 @@
             v-model="newRedirect.domain"
             class="my-2"
             :label="t('tables.headings.domain')"
-            placeholder="mydomain.com"
+            :placeholder="t('placeholders.domain')"
             :error="classInstance.invalidNewRedirect.value.domain"
             :error-messages="t('tables.error-empty')"
             @focusout="classInstance.trimValue(newRedirect, 'domain')"
@@ -282,7 +284,7 @@
             v-model="newRedirect.domain"
             :label="t('tables.select-domain')"
             :options="hostsList"
-            :placeholder="t('tables.headings.type')"
+            :placeholder="t('tables.select-domain')"
             :track-by="(option) => option"
             :error="classInstance.invalidNewRedirect.value.domain"
             :error-messages="t('tables.error-empty')"
@@ -294,7 +296,7 @@
             v-model="newRedirect.key"
             class="my-2"
             :label="t('tables.headings.key')"
-            placeholder="/path/example"
+            :placeholder="t('placeholders.path')"
             :error="classInstance.invalidNewRedirect.value.key"
             :error-messages="t('tables.error-empty')"
             @focusout="classInstance.trimValue(newRedirect, 'key')"
@@ -332,7 +334,7 @@
             class="my-2"
             :inner-label="false"
             :label="t('tables.headings.target_url')"
-            placeholder="https://mysite.com/example/target"
+            :placeholder="t('placeholders.target_url')"
             :error="classInstance.invalidNewRedirect.value.target_url"
             :error-messages="t('tables.error-empty')"
             @focusout="classInstance.trimValue(newRedirect, 'target_url')"
@@ -377,6 +379,7 @@
             v-model="editedItem.key"
             class="my-2"
             :label="t('tables.headings.key')"
+            :placeholder="t('placeholders.path')"
             :error="classInstance.invalidOldRedirect.value.key"
             :error-messages="t('tables.error-empty')"
             @focusout="classInstance.trimValue(editedItem, 'key')"
@@ -414,6 +417,7 @@
             class="my-2"
             :inner-label="false"
             :label="t('tables.headings.target_url')"
+            :placeholder="t('placeholders.target_url')"
             :error="classInstance.invalidOldRedirect.value.target_url"
             :error-messages="t('tables.error-empty')"
             @focusout="classInstance.trimValue(editedItem, 'target_url')"
@@ -422,6 +426,9 @@
       </VaCardContent>
     </VaCard>
     <ScrollToTop />
+    <VaOverlay :model-value="classInstance.isLoading.value" class="loading-overlay" :color="'rgba(0,0,0,0.45)'">
+      <VaProgressCircular indeterminate size="large" />
+    </VaOverlay>
   </div>
 </template>
 

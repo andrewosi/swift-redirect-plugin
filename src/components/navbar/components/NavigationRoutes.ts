@@ -15,28 +15,28 @@ export default {
       name: 'dashboard',
       displayName: 'menu.dashboard',
       meta: {
-        icon: 'ios-home',
+        icon: 'home',
       },
     },
     {
       name: 'logs',
       displayName: 'menu.logs',
       meta: {
-        icon: 'ios-list',
+        icon: 'list',
       },
     },
     {
       name: '404',
       displayName: 'menu.404',
       meta: {
-        icon: 'ios-warning',
+        icon: 'warning',
       },
     },
     {
       name: 'settings',
       displayName: 'menu.settings',
       meta: {
-        icon: 'ios-settings',
+        icon: 'settings',
       },
     },
   ],

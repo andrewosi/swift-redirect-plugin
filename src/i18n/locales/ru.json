@@ -61,8 +61,23 @@
     "is-redirect": "Редирект",
     "is-not-redirect": "404"
   },
+  "bulk_actions": {
+    "activate": "Активировать",
+    "deactivate": "Деактивировать",
+    "delete": "Удалить",
+    "placeholder": "Массовые действия"
+  },
   "support-us": "Поддержите нас",
   "del_tables": "Удалить таблицы из базы данных при удалении плагина?",
   "success-import": "Импорт базы данных успешен! :)",
-  "success-destroy-all": "Все редиректы успешно удалены :)"
+  "success-destroy-all": "Все редиректы успешно удалены :)",
+  "success-post": "Редирект успешно создан :)",
+  "success-update": "Редирект успешно обновлён :)",
+  "error-update": "Не удалось обновить редирект :(",
+  "error-delete": "Не удалось удалить редирект :(",
+  "placeholders": {
+    "domain": "mydomain.com",
+    "path": "/path/example",
+    "target_url": "https://mysite.com/example/target"
+  }
 }

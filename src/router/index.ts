@@ -3,10 +3,10 @@ import AppLayout from '../layouts/AppLayout.vue'
 
 const routes = [
   {
-    name: 'dashboard',
+    name: 'swift-redirect-root',
     path: '/',
     component: AppLayout,
-    redirect: 'dashboard',
+    redirect: { name: 'dashboard' },
     children: [
       {
         name: 'dashboard',

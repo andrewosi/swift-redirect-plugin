@@ -59,8 +59,23 @@
     "is-redirect": "Ohjaus",
     "is-not-redirect": "404"
   },
+  "bulk_actions": {
+    "activate": "Aktivoi",
+    "deactivate": "Poista käytöstä",
+    "delete": "Poista",
+    "placeholder": "Massatoimet"
+  },
   "support-us": "Tuki meille",
   "del_tables": "Poista taulut tietokannasta liitännän poiston yhteydessä?",
   "success-import": "Tietokannan tuonti onnistui! :)",
-  "success-destroy-all": "Kaikki ohjaukset poistettu onnistuneesti :)"
+  "success-destroy-all": "Kaikki ohjaukset poistettu onnistuneesti :)",
+  "success-post": "Ohjaus luotu onnistuneesti :)",
+  "success-update": "Ohjaus päivitetty onnistuneesti :)",
+  "error-update": "Ohjausta ei voitu päivittää :(",
+  "error-delete": "Ohjausta ei voitu poistaa :(",
+  "placeholders": {
+    "domain": "mydomain.com",
+    "path": "/path/example",
+    "target_url": "https://mysite.com/example/target"
+  }
 }

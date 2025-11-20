@@ -99,7 +99,7 @@
 </script>
 
 <template>
-  <div class="logs">
+  <div class="logs has-loading-overlay">
     <va-card>
       <va-card-title>
         <h1>{{ t('tables.headings.log404') }}</h1>
@@ -169,7 +169,7 @@
         v-model="newRedirect.key"
         class="my-2"
         :label="t('tables.headings.key')"
-        placeholder="/path/example"
+        :placeholder="t('placeholders.path')"
         disabled
         :error="classInstance.invalidNewRedirect.value.key"
         :error-messages="t('tables.error-empty')"
@@ -203,12 +203,15 @@
         class="my-2"
         :inner-label="false"
         :label="t('tables.headings.target_url')"
-        placeholder="https://mysite.com/example/target"
+        :placeholder="t('placeholders.target_url')"
         :error="classInstance.invalidNewRedirect.value.target_url"
         :error-messages="t('tables.error-empty')"
         @focusout="classInstance.trimValue(newRedirect, 'target_url')"
       />
     </VaModal>
+    <VaOverlay :model-value="classInstance.isLoading.value" class="loading-overlay" :color="'rgba(0,0,0,0.45)'">
+      <VaProgressCircular indeterminate size="large" />
+    </VaOverlay>
   </div>
   <ScrollToTop />
 </template>

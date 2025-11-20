@@ -46,13 +46,13 @@
 </script>
 
 <template>
-  <div class="logs">
+  <div class="logs has-loading-overlay">
     <va-card>
       <va-card-title>
         <h1>{{ t('tables.headings.logs') }}</h1>
       </va-card-title>
       <VaCardContent class="overflow-auto">
-        <VaInput v-model="filter" placeholder="Filter..." />
+        <VaInput v-model="filter" :placeholder="t('tables.filter')" />
         <VaDataTable
           :items="logsData"
           :columns="logsColumns"
@@ -83,8 +83,13 @@
         </div>
       </VaCardContent>
     </va-card>
+    <VaOverlay :model-value="classInstance.isLoading.value" class="loading-overlay" :color="'rgba(0,0,0,0.45)'">
+      <VaProgressCircular indeterminate size="large" />
+    </VaOverlay>
   </div>
   <ScrollToTop />
 </template>
 
-<style scoped></style>
+<style scoped>
+
+</style>

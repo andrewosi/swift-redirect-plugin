@@ -77,6 +77,7 @@ class SwiftRedirectPlugin {
       key: false,
       target_url: false,
     })
+    this.isLoading = ref(false)
 
     // Bind methods to the class instance
     this.fetchRedirects = this.fetchRedirects.bind(this)
@@ -93,6 +94,11 @@ class SwiftRedirectPlugin {
     this.importData = this.importData.bind(this)
     this.fetchLog404 = this.fetchLog404.bind(this)
   }
+
+  setLoading(value) {
+    this.isLoading.value = value
+  }
+
   resetNewItem() {
     this.newRedirect.value = {
       domain: this.hostsList.value.length <= 1 ? window.location.hostname : '',
@@ -166,6 +172,7 @@ class SwiftRedirectPlugin {
     if (this.validateError(this.invalidNewRedirect.value, this.newRedirect.value) !== true) {
       return false
     }
+    this.setLoading(true)
     try {
       const new_redirects = new Resource()
       const response = await new_redirects.store([this.newRedirect.value])
@@ -176,6 +183,8 @@ class SwiftRedirectPlugin {
       }
     } catch (error) {
       return
+    } finally {
+      this.setLoading(false)
     }
   }
   // Update func
@@ -195,6 +204,7 @@ class SwiftRedirectPlugin {
     } else {
       this.resetEditedItem()
     }
+    this.setLoading(true)
     try {
       const updated_redirects = new Resource()
       const response = await updated_redirects.update(this.changedOldRedirects.value)
@@ -219,10 +229,13 @@ class SwiftRedirectPlugin {
       }
     } catch (error) {
       console.log(error)
+    } finally {
+      this.setLoading(false)
     }
   }
   // Destroy func
   async removeRedirect(id) {
+    this.setLoading(true)
     try {
       const removeResource = new Resource()
       id = Array.isArray(id) ? id : [id]
@@ -236,10 +249,13 @@ class SwiftRedirectPlugin {
       }
     } catch (error) {
       console.log(error.message)
+    } finally {
+      this.setLoading(false)
     }
   }
 
   async removeAllRedirects() {
+    this.setLoading(true)
     const allIds = ref([])
     const allRedirects = ref([])
     try {
@@ -252,6 +268,8 @@ class SwiftRedirectPlugin {
       allRedirects.value = await responseRedirects
     } catch (error) {
       this.toast.error(`Could not fetch the IDs to remove everything: ${error.status}`)
+    } finally {
+      this.setLoading(false)
     }
     allRedirects.value.data.data.map((elem) => {
       allIds.value.push(elem.id)
@@ -261,43 +279,49 @@ class SwiftRedirectPlugin {
 
   // Handle Bulk actions
   async handleBulkActions() {
+    this.setLoading(true)
     const idsToDelete = ref([])
     const selectedCase = this.selectedAction.value.action
-    switch (selectedCase) {
-      case 'activate':
-        this.selectedRedirects.value.forEach((elem) => {
-          elem.is_enabled = 1
-          this.changedOldRedirects.value.push(elem)
-        })
-        break
-      case 'deactivate':
-        this.selectedRedirects.value.forEach((elem) => {
-          elem.is_enabled = 0
-          this.changedOldRedirects.value.push(elem)
-        })
-        break
-      case 'delete':
-        this.selectedRedirects.value.forEach((elem) => {
-          idsToDelete.value.push(elem.id)
-        })
-        try {
-          await this.removeRedirect(idsToDelete.value)
-        } catch (error) {
-          this.toast.error('Error deleting selected data: ', error.message)
-        }
-        break
-    }
-    if (selectedCase !== 'delete') {
-      try {
-        await this.updateRedirects()
-      } catch (error) {
-        this.toast.error('Error updating selected data: ', error.message)
+    try {
+      switch (selectedCase) {
+        case 'activate':
+          this.selectedRedirects.value.forEach((elem) => {
+            elem.is_enabled = 1
+            this.changedOldRedirects.value.push(elem)
+          })
+          break
+        case 'deactivate':
+          this.selectedRedirects.value.forEach((elem) => {
+            elem.is_enabled = 0
+            this.changedOldRedirects.value.push(elem)
+          })
+          break
+        case 'delete':
+          this.selectedRedirects.value.forEach((elem) => {
+            idsToDelete.value.push(elem.id)
+          })
+          try {
+            await this.removeRedirect(idsToDelete.value)
+          } catch (error) {
+            this.toast.error('Error deleting selected data: ', error.message)
+          }
+          break
       }
+      if (selectedCase !== 'delete') {
+        try {
+          await this.updateRedirects()
+        } catch (error) {
+          this.toast.error('Error updating selected data: ', error.message)
+        }
+      }
+    } finally {
+      this.setLoading(false)
     }
     this.selectedRedirects.value = []
   }
 
   async fetchRedirects(query) {
+    this.setLoading(true)
     try {
       const redirects = new Resource()
       // fetch Redirects
@@ -307,15 +331,23 @@ class SwiftRedirectPlugin {
       }
       const responsed = responseRedirects.data
 
-      this.redirectsData.value = responsed.data
+      const normalizedData = responsed.data.map((redirect) => ({
+        ...redirect,
+        count: redirect.count_of_redirects,
+      }))
+
+      this.redirectsData.value = normalizedData
       this.countOfRedirects.value = responsed.count_of_redirects
       this.totalRedirects.value = responsed.total
       this.hostsList.value = responsed.hosts_list
     } catch (error) {
       this.toast.error('Error fetching data: ', error.message)
+    } finally {
+      this.setLoading(false)
     }
   }
   async fetchLogs(query) {
+    this.setLoading(true)
     try {
       const redirects = new Resource()
       // fetch Logs
@@ -328,9 +360,12 @@ class SwiftRedirectPlugin {
       this.totalLogs.value = responsedLogs.total
     } catch (error) {
       console.log(error)
+    } finally {
+      this.setLoading(false)
     }
   }
   async fetchLog404(query) {
+    this.setLoading(true)
     try {
       const redirects = new Resource()
       // fetch Logs
@@ -343,9 +378,12 @@ class SwiftRedirectPlugin {
       this.totalLog404.value = responsedLog404.total
     } catch (error) {
       console.log(error)
+    } finally {
+      this.setLoading(false)
     }
   }
   async importData(file) {
+    this.setLoading(true)
     try {
       const resourceData = new Resource()
       const importedData = await resourceData.import(file)
@@ -356,6 +394,8 @@ class SwiftRedirectPlugin {
       await this.postRedirects(responsedImport)
     } catch (error) {
       console.log(error)
+    } finally {
+      this.setLoading(false)
     }
   }
 }

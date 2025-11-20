@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import i18n from './i18n'
 import { createVuestic, createIconsConfig } from 'vuestic-ui'
 import 'vuestic-ui/css'
@@ -11,7 +12,9 @@ import Toast from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
 
 const app = createApp(App)
+const pinia = createPinia()
 
+app.use(pinia)
 app.use(router)
 app.use(i18n)
 app.use(createVuestic({ config: vuesticGlobalConfig }))

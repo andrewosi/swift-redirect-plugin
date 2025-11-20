@@ -3,8 +3,9 @@
   "private": true,
   "version": "3.1.0",
   "scripts": {
-    "dev": "node developer_mode.js && vite",
-    "build": "node production_mode.js && vite build --base=./",
+    "dev": "vite",
+    "dev:watch": "vite build --base=./ --watch",
+    "build": "vite build --base=./",
     "build:ci": "vite build",
     "start:ci": "serve -s ./dist",
     "preview": "vite preview"
