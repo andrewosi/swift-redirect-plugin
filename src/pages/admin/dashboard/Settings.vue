@@ -14,8 +14,12 @@
   const importDataJson = ref('')
   const delTables = ref('')
   const resource = new Resource()
-  // Image location
-  const bmc_qr = ref('/wp-content/plugins/swift-redirect/public/images/bmc_qr.png')
+  // Image location - use plugin URL from WordPress
+  const bmc_qr = ref(
+    typeof admin_app_vars !== 'undefined' && admin_app_vars.pluginUrl
+      ? admin_app_vars.pluginUrl + 'public/images/bmc_qr.png'
+      : '/wp-content/plugins/swift-redirect/public/images/bmc_qr.png'
+  )
 
   const destroyAllRedirects = async () => {
     try {

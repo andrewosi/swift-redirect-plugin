@@ -164,7 +164,14 @@
       @ok="postRedirectAndDeleteLog()"
       @cancel="resetNewRedirect()"
     >
-      <VaInput v-model="newRedirect.domain" class="my-2" :label="t('tables.headings.domain')" disabled />
+      <VaInput
+        v-model="newRedirect.domain"
+        class="my-2"
+        :label="t('tables.headings.domain')"
+        disabled
+        :error="classInstance.invalidNewRedirect.value.domain"
+        :error-messages="t(classInstance.getValidationMessage('new', 'domain'))"
+      />
       <VaInput
         v-model="newRedirect.key"
         class="my-2"
@@ -172,7 +179,7 @@
         :placeholder="t('placeholders.path')"
         disabled
         :error="classInstance.invalidNewRedirect.value.key"
-        :error-messages="t('tables.error-empty')"
+        :error-messages="t(classInstance.getValidationMessage('new', 'key'))"
         @focusout="classInstance.trimValue(newRedirect.key, 'key')"
       />
       <div class="grid grid-cols-2 gap-1 align-center justify-start">
@@ -205,7 +212,7 @@
         :label="t('tables.headings.target_url')"
         :placeholder="t('placeholders.target_url')"
         :error="classInstance.invalidNewRedirect.value.target_url"
-        :error-messages="t('tables.error-empty')"
+        :error-messages="t(classInstance.getValidationMessage('new', 'target_url'))"
         @focusout="classInstance.trimValue(newRedirect, 'target_url')"
       />
     </VaModal>

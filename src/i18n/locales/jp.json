@@ -41,7 +41,8 @@
       "export": "ファイルのエクスポート",
       "remove-all-redirects": "すべてのリダイレクトを削除",
       "upload-file": "ファイルを選択",
-      "export-text": "クリックしてリダイレクト情報を含むファイルをダウンロード"
+      "export-text": "クリックしてリダイレクト情報を含むファイルをダウンロード",
+      "search": "検索"
     },
     "enabled": "有効",
     "disabled": "無効",
@@ -53,6 +54,9 @@
     "delete": "削除",
     "add-redirect": "新しいリダイレクトを追加",
     "error-empty": "このフィールドは空にできません",
+    "error-invalid-domain": "ドメインに使用できない文字が含まれています。",
+    "error-invalid-path": "パスに使用できない文字が含まれています。",
+    "error-invalid-url": "有効なURLを入力してください。",
     "select-domain": "ドメイン",
     "query-limit": "ページごと",
     "filter": "検索...",

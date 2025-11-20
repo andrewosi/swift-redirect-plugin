@@ -43,7 +43,8 @@
       "export": "Export File",
       "remove-all-redirects": "Delete All Redirects",
       "upload-file": "Choose File",
-      "export-text": "Click to download a file with your redirects"
+      "export-text": "Click to download a file with your redirects",
+      "search": "Search"
     },
     "enabled": "Enabled",
     "disabled": "Disabled",
@@ -55,6 +56,9 @@
     "delete": "Delete",
     "add-redirect": "Add New Redirect",
     "error-empty": "This field cannot be empty",
+    "error-invalid-domain": "Domain contains forbidden characters.",
+    "error-invalid-path": "Path contains forbidden characters.",
+    "error-invalid-url": "Provide a valid URL.",
     "select-domain": "Domain",
     "query-limit": "Per Page",
     "filter": "Search...",

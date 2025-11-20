@@ -41,7 +41,8 @@
       "export": "Exportar Arquivo",
       "remove-all-redirects": "Excluir Todos os Redirecionamentos",
       "upload-file": "Escolher Arquivo",
-      "export-text": "Clique para baixar um arquivo com seus redirecionamentos"
+      "export-text": "Clique para baixar um arquivo com seus redirecionamentos",
+      "search": "Pesquisar"
     },
     "enabled": "Habilitado",
     "disabled": "Desabilitado",
@@ -53,6 +54,9 @@
     "delete": "Excluir",
     "add-redirect": "Adicionar Novo Redirecionamento",
     "error-empty": "Este campo não pode ficar vazio",
+    "error-invalid-domain": "O domínio contém caracteres proibidos.",
+    "error-invalid-path": "O caminho contém caracteres proibidos.",
+    "error-invalid-url": "Informe uma URL válida.",
     "select-domain": "Domínio",
     "query-limit": "Por Página",
     "filter": "Pesquisar...",

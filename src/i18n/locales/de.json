@@ -41,7 +41,8 @@
       "export": "Datei exportieren",
       "remove-all-redirects": "Alle Weiterleitungen löschen",
       "upload-file": "Datei auswählen",
-      "export-text": "Klicken Sie, um eine Datei mit Ihren Weiterleitungen herunterzuladen"
+      "export-text": "Klicken Sie, um eine Datei mit Ihren Weiterleitungen herunterzuladen",
+      "search": "Suchen"
     },
     "enabled": "Aktiviert",
     "disabled": "Deaktiviert",
@@ -53,6 +54,9 @@
     "delete": "Löschen",
     "add-redirect": "Neue Weiterleitung hinzufügen",
     "error-empty": "Dieses Feld darf nicht leer sein",
+    "error-invalid-domain": "Die Domain enthält unzulässige Zeichen.",
+    "error-invalid-path": "Der Pfad enthält unzulässige Zeichen.",
+    "error-invalid-url": "Bitte eine gültige URL angeben.",
     "select-domain": "Domain",
     "query-limit": "Pro Seite",
     "filter": "Suchen...",

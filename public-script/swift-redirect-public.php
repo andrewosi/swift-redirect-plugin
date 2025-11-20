@@ -54,15 +54,14 @@ if (!class_exists('SF_SwiftRedirectPublic')) {
 
             $protocol = function_exists( 'wp_is_https' ) ? ( wp_is_https() ? 'https' : 'http' ) : ( is_ssl() ? 'https' : 'http' );
             $host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
-            $path = isset($_SERVER['REQUEST_URI']) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '/';
-            $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) : '';
+            $path = isset($_SERVER['REQUEST_URI']) ? self::sanitize_path( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
+            $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
 
             if(count($this->redirects) === 0){
                 return;
             }
             
             $redirects_list = json_decode(wp_json_encode($this->redirects), true);
-            $path = self::sanitize_path($path);
 
             foreach ($redirects_list as $rule) {
 
@@ -81,11 +80,27 @@ if (!class_exists('SF_SwiftRedirectPublic')) {
 
                     if($rule_object->domain == $host && $rule_object->is_regex == true){
                             
-                        $pattern = '#' . preg_quote( $rule_object->key, '#' ) . '#i';
+                        // For regex patterns, use the key directly (already validated on save)
+                        // Add delimiters if not present
+                        $pattern = $rule_object->key;
+                        if ( ! preg_match( '#^[#/~].*[#/~][imsxADSUXJu]*$#', $pattern ) ) {
+                            $pattern = '#' . $pattern . '#i';
+                        }
                         
-                        if(preg_match($pattern, $path, $matches)){
-                            $rule_object->countRedirectsIncrement();
-                            self::execute_SwiftRedirect($rule_object->code, $target, $protocol, $host, $path, $user_agent);
+                        // Validate regex pattern before use
+                        $regex_error = null;
+                        set_error_handler( function( $errno, $errstr ) use ( &$regex_error ) {
+                            $regex_error = $errstr;
+                            return true;
+                        }, E_WARNING );
+                        $is_valid = preg_match( $pattern, '' ) !== false;
+                        restore_error_handler();
+                        
+                        if ( $is_valid && null === $regex_error ) {
+                            if(preg_match($pattern, $path, $matches)){
+                                $rule_object->countRedirectsIncrement();
+                                self::execute_SwiftRedirect($rule_object->code, $target, $protocol, $host, $path, $user_agent);
+                            }
                         }
 
                     }else if($rule_object->domain == $host && $rule_object->key == $path){
@@ -98,13 +113,34 @@ if (!class_exists('SF_SwiftRedirectPublic')) {
         }
 
         public static function get_SwiftRedirectList(){
+            // Try to get from cache first
+            $cache_key = 'swift_redirect_list_enabled';
+            $cached_data = get_transient( $cache_key );
+
+            if ( false !== $cached_data ) {
+                return $cached_data;
+            }
+
+            // Cache miss - fetch from database
             global $wpdb;
             $table_name = $wpdb->prefix . SWIFT_REDIRECT_RULE_LIST_TABLE;
 
+            // Safe: table name is from constant, no user input
             $data = $wpdb->get_results(
-                "SELECT * FROM $table_name;"
+                "SELECT * FROM $table_name WHERE is_enabled = 1;"
             );
+
+            // Cache for 5 minutes (300 seconds)
+            set_transient( $cache_key, $data, 300 );
+
             return $data;
+        }
+
+        /**
+         * Clear redirects cache - call this when redirects are created/updated/deleted
+         */
+        public static function clear_redirects_cache() : void {
+            delete_transient( 'swift_redirect_list_enabled' );
         }
 
         public function SwiftRedirectDetermine404(){

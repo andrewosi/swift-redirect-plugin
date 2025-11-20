@@ -38,14 +38,47 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
             if ( empty( $nonce ) || ! wp_verify_nonce( $nonce, 'swiftRedirect-nonce' ) ) {
                 wp_send_json( array( 'status' => 'error', 'message' => __( 'Unauthorized.', 'swift-redirect' ) ), 401 );
             }
+
+            // Rate limiting: max 60 requests per minute per user
+            if ( ! $this->swiftRedirect_check_rate_limit() ) {
+                wp_send_json( array( 'status' => 'error', 'message' => __( 'Too many requests. Please try again later.', 'swift-redirect' ) ), 429 );
+            }
+        }
+
+        private function swiftRedirect_check_rate_limit() : bool {
+            $user_id = get_current_user_id();
+            if ( 0 === $user_id ) {
+                return false;
+            }
+
+            $transient_key = 'swift_redirect_rate_limit_' . $user_id;
+            $request_count = get_transient( $transient_key );
+
+            if ( false === $request_count ) {
+                // First request in this minute
+                set_transient( $transient_key, 1, 60 ); // 60 seconds
+                return true;
+            }
+
+            if ( $request_count >= 60 ) {
+                // Rate limit exceeded
+                return false;
+            }
+
+            // Increment counter
+            set_transient( $transient_key, $request_count + 1, 60 );
+            return true;
         }
 
         public function swiftRedirect_script_enqueue() : void{
             $screen = get_current_screen();
             if ($screen->id == 'toplevel_page_swift-redirect') {
                 
+                $plugin_url = plugin_dir_url( SWIFT_REDIRECT_FILE );
+                
                 $arr = [
                     'nonce' => wp_create_nonce('swiftRedirect-nonce'),
+                    'pluginUrl' => $plugin_url,
                 ];
 
                 $asset = $this->swiftRedirect_get_manifest_entry();
@@ -222,6 +255,10 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
             switch ($method) {
                 case "GET":
                     $input_vars = $this->swiftRedirect_get_pagination_from_request();
+                    // Add search parameter if provided
+                    if ( isset( $_GET['search'] ) ) {
+                        $input_vars['search'] = sanitize_text_field( wp_unslash( $_GET['search'] ) );
+                    }
                     try{
                         
                         $data = self::swiftRedirectsWithPagination($input_vars);
@@ -256,49 +293,78 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
         {
             global $wpdb;
             $table_name = $wpdb->prefix . SWIFT_REDIRECT_RULE_LIST_TABLE;
-            $limit = $request['limit'];
-            $offset = $request['offset'];
+            $limit = absint( $request['limit'] ?? 15 );
+            $offset = absint( $request['offset'] ?? 0 );
+            $search = isset( $request['search'] ) ? sanitize_text_field( wp_unslash( $request['search'] ) ) : '';
 
             $result = array();
 
-            $query = $wpdb->prepare(
-                "SELECT * FROM $table_name LIMIT %d OFFSET %d;",
-                $limit,
-                $offset
-            );
-            $data = $wpdb->get_results($query);
+            // Build WHERE clause for search
+            if ( ! empty( $search ) ) {
+                $search_like = '%' . $wpdb->esc_like( $search ) . '%';
+                $query = $wpdb->prepare(
+                    "SELECT * FROM $table_name WHERE domain LIKE %s OR `key` LIKE %s OR target_url LIKE %s LIMIT %d OFFSET %d;",
+                    $search_like,
+                    $search_like,
+                    $search_like,
+                    $limit,
+                    $offset
+                );
+                $data = $wpdb->get_results($query);
+                
+                $query_total = $wpdb->prepare(
+                    "SELECT COUNT(*) FROM $table_name WHERE domain LIKE %s OR `key` LIKE %s OR target_url LIKE %s;",
+                    $search_like,
+                    $search_like,
+                    $search_like
+                );
+            } else {
+                $query = $wpdb->prepare(
+                    "SELECT * FROM $table_name LIMIT %d OFFSET %d;",
+                    $limit,
+                    $offset
+                );
+                $data = $wpdb->get_results($query);
+                
+                $query_total = $wpdb->prepare(
+                    "SELECT COUNT(*) FROM $table_name;"
+                );
+            }
             
-            $query_total = $wpdb->prepare(
-                "SELECT COUNT(*) FROM $table_name;"
-            );
             $total = $wpdb->get_results($query_total);
 
-
-            foreach($total[0] as $k => $v)
-            {
-                $it = $v;
+            $it = 0;
+            if ( ! empty( $total ) && isset( $total[0] ) ) {
+                foreach($total[0] as $k => $v)
+                {
+                    $it = $v;
+                }
             }
             $result['data'] = $data;
             $result['total'] = (int) $it;
 
             $available_hosts = array();
 
-            if(!empty(get_option('polylang'))){
-                if(get_option('polylang')['force_lang'] == 3 && !empty(get_option('polylang')['domains'])){
-                    foreach(get_option('polylang')['domains'] as $host){
+            $polylang_option = get_option('polylang');
+            if(!empty($polylang_option) && is_array($polylang_option)){
+                if(isset($polylang_option['force_lang']) && $polylang_option['force_lang'] == 3 && !empty($polylang_option['domains']) && is_array($polylang_option['domains'])){
+                    foreach($polylang_option['domains'] as $host){
 
                         $remove_protocol = preg_replace('#^(https?://)?#', '', rtrim($host, '/'));
 
                         array_push($available_hosts, $remove_protocol);
 
                     }
-                }else if(get_option('polylang')['force_lang'] == 2 && !empty(get_option('_transient_pll_languages_list'))){
-                    foreach(get_option('_transient_pll_languages_list') as $host){
+                }else if(isset($polylang_option['force_lang']) && $polylang_option['force_lang'] == 2){
+                    $pll_languages = get_option('_transient_pll_languages_list');
+                    if(!empty($pll_languages) && is_array($pll_languages)){
+                        foreach($pll_languages as $host){
 
-                        $remove_protocol = preg_replace('#^(https?://)?#', '', rtrim($host['home_url'], '/'));
+                            $remove_protocol = preg_replace('#^(https?://)?#', '', rtrim($host['home_url'], '/'));
 
-                        array_push($available_hosts, $remove_protocol);
+                            array_push($available_hosts, $remove_protocol);
 
+                        }
                     }
                 }else{
 
@@ -315,6 +381,7 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
             $result['hosts_list'] = $available_hosts;
 
+            // Safe: table name is from constant, no user input
             $all_count_redirects = $wpdb->get_var("SELECT SUM(count_of_redirects) FROM $table_name");
 
             $result['count_of_redirects'] = intval($all_count_redirects);
@@ -354,9 +421,12 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
                     $total = $wpdb->get_results($query_total);
 
-                    foreach($total[0] as $k => $v)
-                    {
-                        $it = $v;
+                    $it = 0;
+                    if ( ! empty( $total ) && isset( $total[0] ) ) {
+                        foreach($total[0] as $k => $v)
+                        {
+                            $it = $v;
+                        }
                     }
 
                     $result['data'] = $data;
@@ -408,9 +478,12 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
     
                         $total = $wpdb->get_results($query_total);
     
-                        foreach($total[0] as $k => $v)
-                        {
-                            $it = $v;
+                        $it = 0;
+                        if ( ! empty( $total ) && isset( $total[0] ) ) {
+                            foreach($total[0] as $k => $v)
+                            {
+                                $it = $v;
+                            }
                         }
     
                         $result['data'] = $data;

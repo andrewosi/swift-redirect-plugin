@@ -30,6 +30,28 @@
   // Filter variables
   const filtered = ref([])
   const filter = ref('')
+  const searchQuery = ref('')
+
+  // Search function
+  const performSearch = async () => {
+    if (searchQuery.value.trim()) {
+      query.value.search = searchQuery.value.trim()
+      query.value.page = 0
+      currentPage.value = 1
+    } else {
+      delete query.value.search
+      query.value.page = 0
+      currentPage.value = 1
+    }
+    await classInstance.fetchRedirects(query.value)
+    pages.value = Math.ceil(totalRedirects.value / query.value.limit)
+  }
+
+  const handleSearchKeypress = (event) => {
+    if (event.key === 'Enter') {
+      performSearch()
+    }
+  }
 
   // bulk actions and selection
   const selectedAction = classInstance.selectedAction
@@ -135,7 +157,17 @@
     <VaCard>
       <VaCardTitle>{{ t('tables.headings.total-redirects-done') }}: {{ countOfRedirects }}</VaCardTitle>
       <VaCardContent class="overflow-auto">
-        <VaInput v-model="filter" class="sm:col-span-2 md:col-span-3" :placeholder="t('tables.filter')" />
+        <div class="flex gap-2 align-center mb-3">
+          <VaInput 
+            v-model="searchQuery" 
+            class="flex-grow-1" 
+            :placeholder="t('tables.filter')"
+            @keypress="handleSearchKeypress"
+          />
+          <VaButton @click="performSearch" color="primary">
+            {{ t('tables.headings.search') }}
+          </VaButton>
+        </div>
         <div v-if="selectedRedirects.length > 10" class="flex wrap align-start gap-2">
           <div style="max-width: 200px">
             <VaSelect
@@ -157,12 +189,10 @@
           :columns="redirectsColumns"
           :per-page="classInstance.query.limit"
           :current-page="classInstance.query.page"
-          :filter="filter"
           selectable
           striped
           class="table-crud"
           :selected-color="selectedAction.color"
-          @filtered="filtered = $event.items"
           @selectionChange="itemsSelection($event.currentSelectedItems)"
         >
           <template #cell(domain)="rowIndex">
@@ -276,7 +306,7 @@
             :label="t('tables.headings.domain')"
             :placeholder="t('placeholders.domain')"
             :error="classInstance.invalidNewRedirect.value.domain"
-            :error-messages="t('tables.error-empty')"
+            :error-messages="t(classInstance.getValidationMessage('new', 'domain'))"
             @focusout="classInstance.trimValue(newRedirect, 'domain')"
           />
           <VaSelect
@@ -287,7 +317,7 @@
             :placeholder="t('tables.select-domain')"
             :track-by="(option) => option"
             :error="classInstance.invalidNewRedirect.value.domain"
-            :error-messages="t('tables.error-empty')"
+            :error-messages="t(classInstance.getValidationMessage('new', 'domain'))"
             allow-create="unique"
             @focusout="classInstance.trimValue(newRedirect, 'domain')"
             @create-new="classInstance.addNewDomain"
@@ -298,7 +328,7 @@
             :label="t('tables.headings.key')"
             :placeholder="t('placeholders.path')"
             :error="classInstance.invalidNewRedirect.value.key"
-            :error-messages="t('tables.error-empty')"
+            :error-messages="t(classInstance.getValidationMessage('new', 'key'))"
             @focusout="classInstance.trimValue(newRedirect, 'key')"
           />
           <div class="grid grid-cols-2 gap-1 align-center justify-start">
@@ -336,7 +366,7 @@
             :label="t('tables.headings.target_url')"
             :placeholder="t('placeholders.target_url')"
             :error="classInstance.invalidNewRedirect.value.target_url"
-            :error-messages="t('tables.error-empty')"
+            :error-messages="t(classInstance.getValidationMessage('new', 'target_url'))"
             @focusout="classInstance.trimValue(newRedirect, 'target_url')"
           />
         </VaModal>
@@ -360,7 +390,7 @@
             :label="t('tables.headings.domain')"
             :placeholder="t('tables.headings.domain')"
             :error="classInstance.invalidOldRedirect.value.domain"
-            :error-messages="t('tables.error-empty')"
+            :error-messages="t(classInstance.getValidationMessage('old', 'domain'))"
             @focusout="classInstance.trimValue(editedItem, 'domain')"
           />
           <VaSelect
@@ -372,7 +402,7 @@
             allow-create="unique"
             :placeholder="t('tables.select-domain')"
             :error="classInstance.invalidOldRedirect.value.domain"
-            :error-messages="t('tables.error-empty')"
+            :error-messages="t(classInstance.getValidationMessage('old', 'domain'))"
             @create-new="classInstance.addNewDomain"
           />
           <VaInput
@@ -381,7 +411,7 @@
             :label="t('tables.headings.key')"
             :placeholder="t('placeholders.path')"
             :error="classInstance.invalidOldRedirect.value.key"
-            :error-messages="t('tables.error-empty')"
+            :error-messages="t(classInstance.getValidationMessage('old', 'key'))"
             @focusout="classInstance.trimValue(editedItem, 'key')"
           />
           <div class="grid grid-cols-2 gap-1 align-center justify-start">
@@ -419,7 +449,7 @@
             :label="t('tables.headings.target_url')"
             :placeholder="t('placeholders.target_url')"
             :error="classInstance.invalidOldRedirect.value.target_url"
-            :error-messages="t('tables.error-empty')"
+            :error-messages="t(classInstance.getValidationMessage('old', 'target_url'))"
             @focusout="classInstance.trimValue(editedItem, 'target_url')"
           />
         </VaModal>

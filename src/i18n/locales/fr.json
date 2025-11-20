@@ -41,7 +41,8 @@
       "export": "Exporter un fichier",
       "remove-all-redirects": "Supprimer toutes les redirections",
       "upload-file": "Choisir un fichier",
-      "export-text": "Cliquez pour télécharger un fichier avec vos redirections"
+      "export-text": "Cliquez pour télécharger un fichier avec vos redirections",
+      "search": "Rechercher"
     },
     "enabled": "Activé",
     "disabled": "Désactivé",
@@ -53,6 +54,9 @@
     "delete": "Supprimer",
     "add-redirect": "Ajouter une nouvelle redirection",
     "error-empty": "Ce champ ne peut pas être vide",
+    "error-invalid-domain": "Le domaine contient des caractères interdits.",
+    "error-invalid-path": "Le chemin contient des caractères interdits.",
+    "error-invalid-url": "Veuillez saisir une URL valide.",
     "select-domain": "Domaine",
     "query-limit": "Par page",
     "filter": "Rechercher...",

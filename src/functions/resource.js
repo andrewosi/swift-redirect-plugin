@@ -6,11 +6,15 @@ class Resource {
   url = '/wp-admin/admin-ajax.php?action=swift-redirect_admin'
 
   async list(query) {
+    const params = {
+      offset: query.page,
+      limit: query.limit,
+    }
+    if (query.search && query.search.trim()) {
+      params.search = query.search.trim()
+    }
     const response = await axios.get(this.url, {
-      params: {
-        offset: query.page,
-        limit: query.limit,
-      },
+      params: params,
       headers: headers,
     })
     return response.data

@@ -87,6 +87,9 @@ class SF_SwiftRedirectInstance{
 
         }
 
+        // Clear cache after creating redirects
+        delete_transient( 'swift_redirect_list_enabled' );
+
         return wp_send_json( array('status' => 'success', 'data' => $created, 'already_exist' => $alreadyExist, 'invalid' => $invalid ), 200 );
     
     }
@@ -143,6 +146,9 @@ class SF_SwiftRedirectInstance{
 
         }
 
+        // Clear cache after updating redirects
+        delete_transient( 'swift_redirect_list_enabled' );
+
         return wp_send_json( array('status' => 'success', 'data' => $updated, 'invalid' => $invalid), 200 );
 
     }
@@ -170,6 +176,9 @@ class SF_SwiftRedirectInstance{
         } catch (Exception $ex) {
             return wp_send_json( array('status' => 'error', 'message' => $ex->getMessage()), 500 );
         }
+
+        // Clear cache after deleting redirects
+        delete_transient( 'swift_redirect_list_enabled' );
 
         return wp_send_json(array('status' => 'success', 'message' => 'Redirect '. implode(',', array_map('absint', $ids_to_remove)) .' deleted'), 200);
     }
@@ -199,14 +208,48 @@ class SF_SwiftRedirectInstance{
 
         $domain = isset( $redirect['domain'] ) ? sanitize_text_field( wp_unslash( $redirect['domain'] ) ) : '';
         $domain = strtolower( $domain );
+        // Remove multiple consecutive dots
+        $domain = preg_replace( '/\.{2,}/', '.', $domain );
+        // Remove leading/trailing dots
+        $domain = trim( $domain, '.' );
+
+        if ( false !== strpos( $domain, '://' ) ) {
+            $parsed = wp_parse_url( $domain, PHP_URL_HOST );
+            if ( $parsed ) {
+                $domain = $parsed;
+            }
+        }
 
         $key = isset( $redirect['key'] ) ? sanitize_text_field( wp_unslash( $redirect['key'] ) ) : '';
+        // Remove multiple consecutive slashes and dots
+        $key = preg_replace( '/\/{2,}/', '/', $key );
+        $key = preg_replace( '/\.{2,}/', '.', $key );
         $key = '/' . ltrim( $key, '/' );
+        // Normalize multiple slashes to single
+        $key = preg_replace( '/\/{2,}/', '/', $key );
 
-        $target_url = isset( $redirect['target_url'] ) ? esc_url_raw( $redirect['target_url'] ) : '';
+        $target_url = isset( $redirect['target_url'] ) ? sanitize_text_field( wp_unslash( $redirect['target_url'] ) ) : '';
+        $target_url = trim( $target_url );
+        // Add protocol if missing
+        if ( ! empty( $target_url ) && ! preg_match( '#^https?://#i', $target_url ) ) {
+            $target_url = 'https://' . $target_url;
+        }
+        $target_url = esc_url_raw( $target_url );
 
         if ( empty( $domain ) || empty( $key ) || empty( $target_url ) ) {
             return new WP_Error( 'swift_redirect_required', __( 'Domain, key and target URL are required.', 'swift-redirect' ) );
+        }
+
+        if ( ! self::is_valid_domain( $domain ) ) {
+            return new WP_Error( 'swift_redirect_invalid_domain', __( 'Domain contains invalid characters.', 'swift-redirect' ) );
+        }
+
+        if ( ! self::is_valid_path( $key ) ) {
+            return new WP_Error( 'swift_redirect_invalid_path', __( 'Path contains invalid characters.', 'swift-redirect' ) );
+        }
+
+        if ( ! wp_http_validate_url( $target_url ) ) {
+            return new WP_Error( 'swift_redirect_invalid_url', __( 'Target URL must be a valid URL.', 'swift-redirect' ) );
         }
 
         $http_code = isset( $redirect['code'] ) ? absint( $redirect['code'] ) : 301;
@@ -240,4 +283,24 @@ class SF_SwiftRedirectInstance{
         );
     }
 
+    private static function is_valid_domain( $domain ) {
+        if ( 'localhost' === $domain ) {
+            return true;
+        }
+
+        $candidate = strtolower( $domain );
+
+        if ( function_exists( 'idn_to_ascii' ) ) {
+            $converted = idn_to_ascii( $candidate, IDNA_DEFAULT, defined( 'INTL_IDNA_VARIANT_UTS46' ) ? INTL_IDNA_VARIANT_UTS46 : 0 );
+            if ( false !== $converted ) {
+                $candidate = $converted;
+            }
+        }
+
+        return (bool) preg_match( '/^(?=.{1,253}$)(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))*$/', $candidate );
+    }
+
+    private static function is_valid_path( $path ) {
+        return (bool) preg_match( '#^/[A-Za-z0-9\-._~/%&=?@:]*$#', $path );
+    }
 }

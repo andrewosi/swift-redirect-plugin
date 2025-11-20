@@ -77,6 +77,18 @@ class SwiftRedirectPlugin {
       key: false,
       target_url: false,
     })
+    this.validationReasons = ref({
+      new: {
+        domain: '',
+        key: '',
+        target_url: '',
+      },
+      old: {
+        domain: '',
+        key: '',
+        target_url: '',
+      },
+    })
     this.isLoading = ref(false)
 
     // Bind methods to the class instance
@@ -115,6 +127,11 @@ class SwiftRedirectPlugin {
       key: false,
       target_url: false,
     }
+    this.validationReasons.value.new = {
+      domain: '',
+      key: '',
+      target_url: '',
+    }
     this.addNewModal.value = false
   }
   resetEditedItem() {
@@ -124,6 +141,11 @@ class SwiftRedirectPlugin {
       key: false,
       target_url: false,
     }
+    this.validationReasons.value.old = {
+      domain: '',
+      key: '',
+      target_url: '',
+    }
     this.editModal.value = false
   }
 
@@ -132,35 +154,147 @@ class SwiftRedirectPlugin {
     this.hostsList.value.push(item)
   }
   // Validate section
-  validateError = (obj, type) => {
-    Object.keys(obj).map((validationKey) => {
-      type[validationKey] === '' ? (obj[validationKey] = true) : (obj[validationKey] = false)
+  validateError = (obj, type, scope = 'new') => {
+    let isValid = true
+    Object.keys(obj).forEach((validationKey) => {
+      if (typeof type === 'object' && Object.prototype.hasOwnProperty.call(type, validationKey)) {
+        this.trimValue(type, validationKey)
+      }
+      const reason = this.determineValidationReason(validationKey, type?.[validationKey])
+      this.validationReasons.value[scope][validationKey] = reason
+      obj[validationKey] = reason !== ''
+      if (obj[validationKey]) {
+        isValid = false
+      }
     })
-    if (Object.values(obj).some((elem) => elem === true)) {
-      console.log('the validation is invalid')
+    return isValid
+  }
+
+  determineValidationReason(field, value) {
+    const normalised = typeof value === 'string' ? value.trim() : value
+    if (!normalised) {
+      return 'empty'
+    }
+    switch (field) {
+      case 'domain':
+        return this.isDomainValid(normalised) ? '' : 'invalid_domain'
+      case 'key':
+        return this.isPathValid(normalised) ? '' : 'invalid_path'
+      case 'target_url':
+        return this.isUrlValid(normalised) ? '' : 'invalid_url'
+      default:
+        return ''
+    }
+  }
+
+  isDomainValid(value = '') {
+    if (!value) {
       return false
-    } else {
+    }
+    let candidate = value.toString().trim().toLowerCase()
+    try {
+      if (!candidate.includes('://')) {
+        candidate = `https://${candidate}`
+      }
+      candidate = new URL(candidate).hostname
+    } catch (error) {
+      return false
+    }
+    const domainRegex =
+      /^(?=.{1,253}$)(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))*$/i
+    return domainRegex.test(candidate) || candidate === 'localhost'
+  }
+
+  isPathValid(value = '') {
+    if (!value) {
+      return false
+    }
+    let candidate = value.toString().trim()
+    // Normalize path: remove multiple slashes and dots
+    candidate = candidate.replace(/\/{2,}/g, '/').replace(/\.{2,}/g, '.')
+    candidate = '/' + candidate.replace(/^\/+|\/+$/g, '')
+    candidate = candidate.replace(/\/{2,}/g, '/')
+    const pathRegex = /^\/[A-Za-z0-9\-._~/%&=?@:]*$/
+    return pathRegex.test(candidate)
+  }
+
+  isUrlValid(value = '') {
+    if (!value) {
+      return false
+    }
+    try {
+      let candidate = value.toString().trim()
+      // Add protocol if missing
+      if (!/^https?:\/\//i.test(candidate)) {
+        candidate = 'https://' + candidate
+      }
+      new URL(candidate)
       return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  getValidationMessage(scope, field) {
+    const reason = this.validationReasons.value?.[scope]?.[field]
+    switch (reason) {
+      case 'invalid_domain':
+        return 'tables.error-invalid-domain'
+      case 'invalid_path':
+        return 'tables.error-invalid-path'
+      case 'invalid_url':
+        return 'tables.error-invalid-url'
+      case 'empty':
+        return 'tables.error-empty'
+      default:
+        return 'tables.error-empty'
     }
   }
   // Sanitise input fields
   trimValue(val, key) {
     let sanitisedVal
     if (val[key]) {
-      sanitisedVal = val[key].toString().toLowerCase().trim().replace(/_/g, '-').replace(/\s+/g, '-')
+      sanitisedVal = val[key].toString().trim()
       switch (key) {
         case 'domain':
-          if (URL.canParse(sanitisedVal)) {
-            sanitisedVal = new URL(sanitisedVal).hostname
+          sanitisedVal = sanitisedVal.toLowerCase().replace(/_/g, '-').replace(/\s+/g, '-')
+          // Remove multiple consecutive dots
+          sanitisedVal = sanitisedVal.replace(/\.{2,}/g, '.')
+          // Remove leading/trailing dots
+          sanitisedVal = sanitisedVal.replace(/^\.+|\.+$/g, '')
+          if (URL.canParse(sanitisedVal) || URL.canParse('https://' + sanitisedVal)) {
+            try {
+              const url = URL.canParse(sanitisedVal) ? new URL(sanitisedVal) : new URL('https://' + sanitisedVal)
+              sanitisedVal = url.hostname
+            } catch (e) {
+              // Keep original if URL parsing fails
+            }
           }
           val[key] = sanitisedVal
           break
         case 'key':
-          if (URL.canParse(sanitisedVal)) {
-            sanitisedVal = new URL(sanitisedVal).pathname
+          sanitisedVal = sanitisedVal.replace(/\s+/g, '')
+          // Remove multiple consecutive slashes and dots
+          sanitisedVal = sanitisedVal.replace(/\/{2,}/g, '/').replace(/\.{2,}/g, '.')
+          if (URL.canParse(sanitisedVal) || URL.canParse('https://example.com' + sanitisedVal)) {
+            try {
+              const url = URL.canParse(sanitisedVal) ? new URL(sanitisedVal) : new URL('https://example.com' + sanitisedVal)
+              sanitisedVal = url.pathname
+            } catch (e) {
+              // Keep original if URL parsing fails
+            }
           }
-          sanitisedVal = '/' + sanitisedVal
-          sanitisedVal = sanitisedVal.replace(/^\/+|\/+$|(\/)+/g, '/')
+          sanitisedVal = '/' + sanitisedVal.replace(/^\/+|\/+$/g, '')
+          // Normalize multiple slashes to single
+          sanitisedVal = sanitisedVal.replace(/\/{2,}/g, '/')
+          val[key] = sanitisedVal
+          break
+        case 'target_url':
+          sanitisedVal = sanitisedVal.trim()
+          // Add protocol if missing
+          if (sanitisedVal && !/^https?:\/\//i.test(sanitisedVal)) {
+            sanitisedVal = 'https://' + sanitisedVal
+          }
           val[key] = sanitisedVal
           break
       }
@@ -169,7 +303,7 @@ class SwiftRedirectPlugin {
 
   // Post func
   async postRedirects() {
-    if (this.validateError(this.invalidNewRedirect.value, this.newRedirect.value) !== true) {
+    if (this.validateError(this.invalidNewRedirect.value, this.newRedirect.value, 'new') !== true) {
       return false
     }
     this.setLoading(true)
@@ -198,7 +332,7 @@ class SwiftRedirectPlugin {
   async updateRedirects() {
     if (
       this.changedOldRedirects.value.length === 1 &&
-      this.validateError(this.invalidOldRedirect.value, this.editedItem.value) !== true
+      this.validateError(this.invalidOldRedirect.value, this.editedItem.value, 'old') !== true
     ) {
       return false
     } else {

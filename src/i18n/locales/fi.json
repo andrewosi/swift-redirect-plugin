@@ -41,7 +41,8 @@
       "export": "Vie tiedosto",
       "remove-all-redirects": "Poista kaikki ohjaukset",
       "upload-file": "Valitse tiedosto",
-      "export-text": "Napsauta ladataksesi tiedoston ohjauksillasi"
+      "export-text": "Napsauta ladataksesi tiedoston ohjauksillasi",
+      "search": "Haku"
     },
     "enabled": "Käytössä",
     "disabled": "Poistettu käytöstä",
@@ -53,6 +54,9 @@
     "delete": "Poista",
     "add-redirect": "Lisää uusi ohjaus",
     "error-empty": "Tämä kenttä ei voi olla tyhjä",
+    "error-invalid-domain": "Verkkotunnus sisältää kiellettyjä merkkejä.",
+    "error-invalid-path": "Polku sisältää kiellettyjä merkkejä.",
+    "error-invalid-url": "Anna kelvollinen URL-osoite.",
     "select-domain": "Verkkotunnus",
     "query-limit": "Per sivu",
     "filter": "Haku...",

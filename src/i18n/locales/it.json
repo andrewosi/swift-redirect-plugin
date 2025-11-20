@@ -41,7 +41,8 @@
       "export": "Esporta File",
       "remove-all-redirects": "Elimina Tutti i Reindirizzamenti",
       "upload-file": "Scegli File",
-      "export-text": "Clicca per scaricare un file con i tuoi reindirizzamenti"
+      "export-text": "Clicca per scaricare un file con i tuoi reindirizzamenti",
+      "search": "Cerca"
     },
     "enabled": "Abilitato",
     "disabled": "Disabilitato",
@@ -53,6 +54,9 @@
     "delete": "Elimina",
     "add-redirect": "Aggiungi Nuovo Reindirizzamento",
     "error-empty": "Questo campo non può essere vuoto",
+    "error-invalid-domain": "Il dominio contiene caratteri non consentiti.",
+    "error-invalid-path": "Il percorso contiene caratteri non consentiti.",
+    "error-invalid-url": "Inserisci un URL valido.",
     "select-domain": "Dominio",
     "query-limit": "Per Pagina",
     "filter": "Ricerca...",
