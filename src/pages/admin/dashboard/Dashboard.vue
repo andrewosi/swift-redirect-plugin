@@ -168,7 +168,7 @@
             {{ t('tables.headings.search') }}
           </VaButton>
         </div>
-        <div v-if="selectedRedirects.length > 10" class="flex wrap align-start gap-2">
+        <div v-if="selectedRedirects.length > 10" class="card__bg flex wrap align-start gap-2">
           <div style="max-width: 200px">
             <VaSelect
               v-model="selectedAction"
@@ -242,7 +242,7 @@
           </template>
         </VaDataTable>
 
-        <div v-if="selectedRedirects.length > 0" class="flex wrap align-start gap-2">
+        <div v-if="selectedRedirects.length > 0" class="card__bg flex wrap align-start gap-2">
           <div style="max-width: 200px">
             <VaSelect
               v-model="selectedAction"
@@ -258,7 +258,7 @@
           }}</VaButton>
         </div>
 
-        <div class="flex justify-between wrap mt-4" style="margin-left: 0; margin-right: 0">
+        <div class="card__bg flex justify-between wrap mt-4" style="margin-left: 0; margin-right: 0">
           <vaButton
             size="medium"
             style="height: fit-content"

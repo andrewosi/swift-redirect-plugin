@@ -16,11 +16,19 @@ export const useThemeStore = defineStore('theme', () => {
     if (savedTheme) {
       currentTheme.value = savedTheme
       applyPreset(savedTheme)
+      
+      // Додати клас для темної теми при завантаженні
+      const isDarkTheme = savedTheme === 'dark' || savedTheme === 'semi-dark'
+      if (isDarkTheme) {
+        document.body.classList.add(`va-theme-${savedTheme}`)
+        document.documentElement.classList.add(`va-theme-${savedTheme}`)
+      }
     }
     
     if (savedColor) {
       primaryColor.value = savedColor
       colors.primary = savedColor
+      document.documentElement.style.setProperty('--va-primary', savedColor)
     }
   }
 
@@ -28,6 +36,21 @@ export const useThemeStore = defineStore('theme', () => {
   const setTheme = (themeName: string) => {
     currentTheme.value = themeName
     applyPreset(themeName)
+    
+    // Додати/видалити клас для темної теми
+    const isDarkTheme = themeName === 'dark' || themeName === 'semi-dark'
+    if (isDarkTheme) {
+      document.body.classList.add(`va-theme-${themeName}`)
+      document.documentElement.classList.add(`va-theme-${themeName}`)
+    } else {
+      document.body.classList.remove('va-theme-dark', 'va-theme-semi-dark')
+      document.documentElement.classList.remove('va-theme-dark', 'va-theme-semi-dark')
+    }
+    
+    // Застосувати primary колір після зміни теми
+    if (primaryColor.value) {
+      document.documentElement.style.setProperty('--va-primary', primaryColor.value)
+    }
     localStorage.setItem('swift-redirect-theme', themeName)
   }
 
@@ -35,6 +58,7 @@ export const useThemeStore = defineStore('theme', () => {
   const setPrimaryColor = (color: string) => {
     primaryColor.value = color
     colors.primary = color
+    document.documentElement.style.setProperty('--va-primary', color)
     localStorage.setItem('swift-redirect-primary-color', color)
   }
 
@@ -50,6 +74,11 @@ export const useThemeStore = defineStore('theme', () => {
 
   // Ініціалізація
   loadFromStorage()
+  
+  // Застосувати primary колір після завантаження (якщо не було завантажено з localStorage)
+  if (!localStorage.getItem('swift-redirect-primary-color') && primaryColor.value) {
+    document.documentElement.style.setProperty('--va-primary', primaryColor.value)
+  }
 
   return {
     currentTheme,

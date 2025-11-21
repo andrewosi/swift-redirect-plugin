@@ -18,6 +18,28 @@
   // Filter variables
   const filtered = ref([])
   const filter = ref('')
+  const searchQuery = ref('')
+  
+  // Search function
+  const performSearch = async () => {
+    if (searchQuery.value.trim()) {
+      query.value.search = searchQuery.value.trim()
+      query.value.page = 0
+      currentPage.value = 1
+    } else {
+      delete query.value.search
+      query.value.page = 0
+      currentPage.value = 1
+    }
+    await classInstance.fetchLogs(query.value)
+    pages.value = Math.ceil(totalLogs.value / query.value.limit)
+  }
+  
+  const handleSearchKeypress = (event) => {
+    if (event.key === 'Enter') {
+      performSearch()
+    }
+  }
 
   // Pagination
   const pages = ref(null)
@@ -52,7 +74,14 @@
         <h1>{{ t('tables.headings.logs') }}</h1>
       </va-card-title>
       <VaCardContent class="overflow-auto">
-        <VaInput v-model="filter" :placeholder="t('tables.filter')" />
+        <div class="flex items-center gap-2">
+          <VaInput 
+            v-model="searchQuery" 
+            :placeholder="t('tables.filter')" 
+            @keyup.enter="performSearch"
+          />
+          <VaButton @click="performSearch">{{ t('tables.headings.search') }}</VaButton>
+        </div>
         <VaDataTable
           :items="logsData"
           :columns="logsColumns"

@@ -3,7 +3,7 @@
     <navbar />
     <div class="app-layout__content">
       <div class="app-layout__page">
-        <div class="p-2 md:px-6 md:py-9">
+        <div class="app-layout__page-content">
           <router-view />
         </div>
       </div>
@@ -20,7 +20,8 @@
   $tabletBreakPointPX: 768px;
 
   .app-layout {
-    height: 100vh;
+    height: fit-content;
+    min-height: fit-content;
     display: flex;
     flex-direction: column;
     &__navbar {
@@ -29,16 +30,24 @@
 
     &__content {
       display: flex;
-      height: calc(100vh - 4rem);
+      height: fit-content;
+      min-height: fit-content;
       flex: 1;
-
-      @media screen and (max-width: $tabletBreakPointPX) {
-        height: calc(100vh - 6.5rem);
-      }
     }
     &__page {
       flex-grow: 2;
-      overflow-y: scroll;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 0;
+      margin: 0;
+      height: fit-content;
+      min-height: fit-content;
+    }
+    &__page-content {
+      padding: 0.5rem;
+      @media screen and (min-width: 768px) {
+        padding: 1.5rem 2rem;
+      }
     }
     .va-data-table__table-td {
       max-width: 300px !important;

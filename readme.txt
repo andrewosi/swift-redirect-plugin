@@ -1,9 +1,9 @@
 === Swift Redirect ===
 Contributors: andrewrccg, makstupchiy
 Donate link: https://www.buymeacoffee.com/rcc_group
-Tags: redirect, redirector, logs, 302, 404, 301, qr, redirects
+Tags: redirect, redirector, logs, 404, redirects
 Requires at least: 4.7
-Tested up to: 6.4.3
+Tested up to: 6.8
 Stable tag: 1.0
 Requires PHP: 7.0
 License: GPLv2 or later

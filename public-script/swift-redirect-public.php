@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 include 'swift-redirect-instance.php';
 
 if (!class_exists('SF_SwiftRedirectPublic')) {
-
+    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedClassFound -- Legacy class name, SF_ prefix is used for compatibility
     class SF_SwiftRedirectPublic{
         
         public $redirects;
@@ -39,6 +39,7 @@ if (!class_exists('SF_SwiftRedirectPublic')) {
                 "user_agent" => self::truncate_value( sanitize_text_field( $user_agent ) ),
             );
             
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Real-time logging required
             $wpdb->insert(
                 $table_name_logs, 
                 $redirect_log,
@@ -54,6 +55,7 @@ if (!class_exists('SF_SwiftRedirectPublic')) {
 
             $protocol = function_exists( 'wp_is_https' ) ? ( wp_is_https() ? 'https' : 'http' ) : ( is_ssl() ? 'https' : 'http' );
             $host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized via sanitize_path()
             $path = isset($_SERVER['REQUEST_URI']) ? self::sanitize_path( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
             $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
 
@@ -89,6 +91,7 @@ if (!class_exists('SF_SwiftRedirectPublic')) {
                         
                         // Validate regex pattern before use
                         $regex_error = null;
+                        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- Used for safe regex validation, not debug
                         set_error_handler( function( $errno, $errstr ) use ( &$regex_error ) {
                             $regex_error = $errstr;
                             return true;
@@ -125,7 +128,8 @@ if (!class_exists('SF_SwiftRedirectPublic')) {
             global $wpdb;
             $table_name = $wpdb->prefix . SWIFT_REDIRECT_RULE_LIST_TABLE;
 
-            // Safe: table name is from constant, no user input
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Cached via get_SwiftRedirectList() method
             $data = $wpdb->get_results(
                 "SELECT * FROM $table_name WHERE is_enabled = 1;"
             );
@@ -149,8 +153,11 @@ if (!class_exists('SF_SwiftRedirectPublic')) {
                 $table_name_404 = $wpdb->prefix . SWIFT_REDIRECT_404_LIST_TABLE;
 
                 $host = isset($_SERVER['HTTP_HOST']) ? self::truncate_value( sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ), 191 ) : '';
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized via sanitize_path()
                 $request_link = isset($_SERVER['REQUEST_URI']) ? self::truncate_value( self::sanitize_path( wp_unslash( $_SERVER['REQUEST_URI'] ) ), 191 ) : '';
 
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name_404 is from constant, safe
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Real-time 404 logging required
                 $exist_in_db = $wpdb->get_results(
                     $wpdb->prepare(
                         "SELECT * FROM $table_name_404 WHERE host = %s AND request_link = %s",
@@ -163,6 +170,8 @@ if (!class_exists('SF_SwiftRedirectPublic')) {
                     
                     $count_of_requests = $exist_in_db[0]->count_of_requests + 1;
 
+                    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name_404 is from constant, safe
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Real-time 404 logging required
                     $wpdb->query($wpdb->prepare(
                         "UPDATE $table_name_404 
                         SET count_of_requests = %s
@@ -177,6 +186,7 @@ if (!class_exists('SF_SwiftRedirectPublic')) {
                         "count_of_requests" => 1
                     );
                     
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Real-time 404 logging required
                     $wpdb->insert(
                         $table_name_404, 
                         $request_404,

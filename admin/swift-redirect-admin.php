@@ -30,18 +30,18 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
         private function swiftRedirect_guard_request() : void{
             if ( ! current_user_can( 'manage_options' ) ) {
-                wp_send_json( array( 'status' => 'error', 'message' => __( 'Insufficient permissions.', 'swift-redirect' ) ), 403 );
+                wp_send_json( array( 'status' => 'error', 'message' => __( 'Insufficient permissions.', 'swift-redirect-plugin' ) ), 403 );
             }
 
             $nonce = isset( $_SERVER['HTTP_X_WP_NONCE'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_WP_NONCE'] ) ) : '';
 
             if ( empty( $nonce ) || ! wp_verify_nonce( $nonce, 'swiftRedirect-nonce' ) ) {
-                wp_send_json( array( 'status' => 'error', 'message' => __( 'Unauthorized.', 'swift-redirect' ) ), 401 );
+                wp_send_json( array( 'status' => 'error', 'message' => __( 'Unauthorized.', 'swift-redirect-plugin' ) ), 401 );
             }
 
             // Rate limiting: max 60 requests per minute per user
             if ( ! $this->swiftRedirect_check_rate_limit() ) {
-                wp_send_json( array( 'status' => 'error', 'message' => __( 'Too many requests. Please try again later.', 'swift-redirect' ) ), 429 );
+                wp_send_json( array( 'status' => 'error', 'message' => __( 'Too many requests. Please try again later.', 'swift-redirect-plugin' ) ), 429 );
             }
         }
 
@@ -189,7 +189,7 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
         public function swiftRedirect_admin_menu() : void{
             add_menu_page(
-                __( 'Swift Redirect', 'textdomain' ),
+                __( 'Swift Redirect', 'swift-redirect-plugin' ),
                 'Swift Redirect',
                 'manage_options',
                 'swift-redirect',
@@ -202,10 +202,10 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
             global $wpdb;
             $table_name = $wpdb->prefix . SWIFT_REDIRECT_RULE_LIST_TABLE;
 
-            $redirects_query = $wpdb->prepare(
-                "SELECT domain, `key`, is_regex, is_enabled, is_params, target_url, code, count_of_redirects, created_at FROM $table_name;"
-            );
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
+            $redirects_query = "SELECT domain, `key`, is_regex, is_enabled, is_params, target_url, code, count_of_redirects, created_at FROM $table_name;";
 
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- AJAX endpoint requires real-time data, query is safe
             $redirects = $wpdb->get_results($redirects_query);
 
             return $redirects;
@@ -256,7 +256,9 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
                 case "GET":
                     $input_vars = $this->swiftRedirect_get_pagination_from_request();
                     // Add search parameter if provided
+                    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified in swiftRedirect_guard_request()
                     if ( isset( $_GET['search'] ) ) {
+                        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified in swiftRedirect_guard_request()
                         $input_vars['search'] = sanitize_text_field( wp_unslash( $_GET['search'] ) );
                     }
                     try{
@@ -302,6 +304,7 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
             // Build WHERE clause for search
             if ( ! empty( $search ) ) {
                 $search_like = '%' . $wpdb->esc_like( $search ) . '%';
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
                 $query = $wpdb->prepare(
                     "SELECT * FROM $table_name WHERE domain LIKE %s OR `key` LIKE %s OR target_url LIKE %s LIMIT %d OFFSET %d;",
                     $search_like,
@@ -310,8 +313,10 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
                     $limit,
                     $offset
                 );
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- AJAX endpoint requires real-time data, query is prepared
                 $data = $wpdb->get_results($query);
                 
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
                 $query_total = $wpdb->prepare(
                     "SELECT COUNT(*) FROM $table_name WHERE domain LIKE %s OR `key` LIKE %s OR target_url LIKE %s;",
                     $search_like,
@@ -319,18 +324,20 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
                     $search_like
                 );
             } else {
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
                 $query = $wpdb->prepare(
                     "SELECT * FROM $table_name LIMIT %d OFFSET %d;",
                     $limit,
                     $offset
                 );
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- AJAX endpoint requires real-time data, query is prepared
                 $data = $wpdb->get_results($query);
                 
-                $query_total = $wpdb->prepare(
-                    "SELECT COUNT(*) FROM $table_name;"
-                );
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
+                $query_total = "SELECT COUNT(*) FROM $table_name;";
             }
             
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- AJAX endpoint requires real-time data, query is safe
             $total = $wpdb->get_results($query_total);
 
             $it = 0;
@@ -381,7 +388,8 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
             $result['hosts_list'] = $available_hosts;
 
-            // Safe: table name is from constant, no user input
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- AJAX endpoint requires real-time data
             $all_count_redirects = $wpdb->get_var("SELECT SUM(count_of_redirects) FROM $table_name");
 
             $result['count_of_redirects'] = intval($all_count_redirects);
@@ -399,6 +407,9 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
             if(!empty($method)){
                 $input_vars = $this->swiftRedirect_get_pagination_from_request();
+                // Add search parameter if provided
+                // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified in swiftRedirect_guard_request()
+                $search = isset( $_GET['search'] ) ? sanitize_text_field( wp_unslash( $_GET['search'] ) ) : '';
                 try{
 
                     global $wpdb;
@@ -408,17 +419,43 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
 
                     $result = array();
 
-                    $query = $wpdb->prepare(
-                        "SELECT * FROM $table_name LIMIT %d OFFSET %d;",
-                        $limit,
-                        $offset
-                    );
-                    $data = $wpdb->get_results($query);
-                    
-                    $query_total = $wpdb->prepare(
-                        "SELECT COUNT(*) FROM $table_name;"
-                    );
+                    // Build WHERE clause for search
+                    if ( ! empty( $search ) ) {
+                        $search_like = '%' . $wpdb->esc_like( $search ) . '%';
+                        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
+                        $query = $wpdb->prepare(
+                            "SELECT * FROM $table_name WHERE redirect_from LIKE %s OR redirect_to LIKE %s OR user_agent LIKE %s LIMIT %d OFFSET %d;",
+                            $search_like,
+                            $search_like,
+                            $search_like,
+                            $limit,
+                            $offset
+                        );
+                        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- AJAX endpoint requires real-time data, query is prepared
+                        $data = $wpdb->get_results($query);
+                        
+                        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
+                        $query_total = $wpdb->prepare(
+                            "SELECT COUNT(*) FROM $table_name WHERE redirect_from LIKE %s OR redirect_to LIKE %s OR user_agent LIKE %s;",
+                            $search_like,
+                            $search_like,
+                            $search_like
+                        );
+                    } else {
+                        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
+                        $query = $wpdb->prepare(
+                            "SELECT * FROM $table_name LIMIT %d OFFSET %d;",
+                            $limit,
+                            $offset
+                        );
+                        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- AJAX endpoint requires real-time data, query is prepared
+                        $data = $wpdb->get_results($query);
+                        
+                        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
+                        $query_total = "SELECT COUNT(*) FROM $table_name;";
+                    }
 
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- AJAX endpoint requires real-time data, query is safe
                     $total = $wpdb->get_results($query_total);
 
                     $it = 0;
@@ -460,22 +497,49 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
                 case "GET":
                     try{
                         $pagination = $this->swiftRedirect_get_pagination_from_request();
+                        // Add search parameter if provided
+                        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified in swiftRedirect_guard_request()
+                        $search = isset( $_GET['search'] ) ? sanitize_text_field( wp_unslash( $_GET['search'] ) ) : '';
                         $limit = $pagination['limit'];
                         $offset = $pagination['offset'];
     
                         $result = array();
     
-                        $query = $wpdb->prepare(
-                            "SELECT * FROM $table_name LIMIT %d OFFSET %d;",
-                            $limit,
-                            $offset
-                        );
-                        $data = $wpdb->get_results($query);
-                        
-                        $query_total = $wpdb->prepare(
-                            "SELECT COUNT(*) FROM $table_name;"
-                        );
+                        // Build WHERE clause for search
+                        if ( ! empty( $search ) ) {
+                            $search_like = '%' . $wpdb->esc_like( $search ) . '%';
+                            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
+                            $query = $wpdb->prepare(
+                                "SELECT * FROM $table_name WHERE host LIKE %s OR request_link LIKE %s LIMIT %d OFFSET %d;",
+                                $search_like,
+                                $search_like,
+                                $limit,
+                                $offset
+                            );
+                            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- AJAX endpoint requires real-time data, query is prepared
+                            $data = $wpdb->get_results($query);
+                            
+                            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
+                            $query_total = $wpdb->prepare(
+                                "SELECT COUNT(*) FROM $table_name WHERE host LIKE %s OR request_link LIKE %s;",
+                                $search_like,
+                                $search_like
+                            );
+                        } else {
+                            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
+                            $query = $wpdb->prepare(
+                                "SELECT * FROM $table_name LIMIT %d OFFSET %d;",
+                                $limit,
+                                $offset
+                            );
+                            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- AJAX endpoint requires real-time data, query is prepared
+                            $data = $wpdb->get_results($query);
+                            
+                            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
+                            $query_total = "SELECT COUNT(*) FROM $table_name;";
+                        }
     
+                        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- AJAX endpoint requires real-time data, query is safe
                         $total = $wpdb->get_results($query_total);
     
                         $it = 0;
@@ -505,11 +569,11 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
                         list( $row_id, $row_data ) = $this->swiftRedirect_sanitize_404_row( $add_to_redirects );
 
                         if ( 0 === $row_id || empty( $row_data ) ) {
-                            return wp_send_json( array('status' => 'error', 'message' => __( 'Invalid payload.', 'swift-redirect' )), 400 );
+                            return wp_send_json( array('status' => 'error', 'message' => __( 'Invalid payload.', 'swift-redirect-plugin' )), 400 );
                         }
                         
                         try{
-                            
+                            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Real-time data update required
                             $wpdb->update($table_name , $row_data, array('id' => $row_id));
                 
                         } catch (Exception $ex) {
@@ -563,7 +627,9 @@ if (!class_exists('SF_SwiftRedirectAdmin')) {
         }
 
         private function swiftRedirect_get_pagination_from_request() : array {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified in swiftRedirect_guard_request()
             $limit = isset( $_GET['limit'] ) ? absint( wp_unslash( $_GET['limit'] ) ) : 15;
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified in swiftRedirect_guard_request()
             $offset = isset( $_GET['offset'] ) ? absint( wp_unslash( $_GET['offset'] ) ) : 0;
 
             if ( $limit <= 0 ) {

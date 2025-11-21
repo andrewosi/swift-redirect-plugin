@@ -21,22 +21,30 @@ class Resource {
   }
 
   async logs(query) {
+    const params = {
+      offset: query.page,
+      limit: query.limit,
+    }
+    if (query.search && query.search.trim()) {
+      params.search = query.search.trim()
+    }
     const response = await axios.get(`/wp-admin/admin-ajax.php?action=swift-redirect_log`, {
-      params: {
-        offset: query.page,
-        limit: query.limit,
-      },
+      params: params,
       headers: headers,
     })
     return response.data
   }
 
   async log404(query) {
+    const params = {
+      offset: query.page,
+      limit: query.limit,
+    }
+    if (query.search && query.search.trim()) {
+      params.search = query.search.trim()
+    }
     const response = await axios.get(`/wp-admin/admin-ajax.php?action=swift-redirect_404`, {
-      params: {
-        offset: query.page,
-        limit: query.limit,
-      },
+      params: params,
       headers: headers,
     })
     return response.data

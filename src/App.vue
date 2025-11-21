@@ -9,7 +9,7 @@
     font-family: 'Source Sans Pro', Avenir, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    color: #2c3e50;
+    color: var(--va-on-background-primary, #2c3e50);
   }
   //:root {
   //  --va-data-table-striped-tr-background-color: #f6f7f7!important;
@@ -82,5 +82,44 @@
   }
   .router-link-active.router-link-exact-active.navigation-route {
     background-color: var(--va-primary) !important;
+    color: var(--va-on-primary, #ffffff) !important;
+  }
+  .router-link-active.router-link-exact-active.navigation-route .va-icon {
+    color: var(--va-on-primary, #ffffff) !important;
+  }
+  
+  // Виправлення кольорів тексту для тем
+  body {
+    color: var(--va-on-background-primary, #2c3e50) !important;
+  }
+  
+  // Виправлення падінґів та марджинів
+  .app-layout__page {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .app-layout__content {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  // Забезпечення цілісності полотна
+  .swiftRedirect-admin-page {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  // Виправлення розмірів
+  .va-card {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .va-card .va-card__content {
+    padding: 1rem !important;
   }
 </style>

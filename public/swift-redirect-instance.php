@@ -47,6 +47,8 @@ class SF_SwiftRedirectInstance{
 
                 $data = $prepared['data'];
 
+                // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Real-time data required for redirect operations
                 $checkIfExists = $wpdb->get_var(
                     $wpdb->prepare(
                         "SELECT id FROM $table_name WHERE domain = %s AND `key` = %s",
@@ -56,6 +58,7 @@ class SF_SwiftRedirectInstance{
                 );
                 
                 if($checkIfExists === null){
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Real-time data required for redirect operations
                     $wpdb->insert(
                         $table_name, 
                         $data,
@@ -119,6 +122,7 @@ class SF_SwiftRedirectInstance{
                 $data = $prepared['data'];
                 $row_id = $prepared['id'];
 
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Real-time data required for redirect operations
                 $wpdb->update(
                     $table_name,
                     $data,
@@ -167,6 +171,7 @@ class SF_SwiftRedirectInstance{
                     continue;
                 }
 
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Real-time data required for redirect operations
                 $wpdb->delete(
                     $table_name,
                     array('id' => $id),
@@ -191,6 +196,8 @@ class SF_SwiftRedirectInstance{
 
         $count_of_redirects = $this->count_of_redirects + 1;
 
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table_name is from constant, safe
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Real-time data required for redirect operations
         $wpdb->query($wpdb->prepare(
             "UPDATE $table_name 
             SET count_of_redirects = %s
@@ -203,7 +210,7 @@ class SF_SwiftRedirectInstance{
     private static function prepareRedirectRow($redirect, $requires_id = false)
     {
         if ( ! is_array( $redirect ) ) {
-            return new WP_Error( 'swift_redirect_invalid', __( 'Invalid redirect payload.', 'swift-redirect' ) );
+            return new WP_Error( 'swift_redirect_invalid', __( 'Invalid redirect payload.', 'swift-redirect-plugin' ) );
         }
 
         $domain = isset( $redirect['domain'] ) ? sanitize_text_field( wp_unslash( $redirect['domain'] ) ) : '';
@@ -237,19 +244,19 @@ class SF_SwiftRedirectInstance{
         $target_url = esc_url_raw( $target_url );
 
         if ( empty( $domain ) || empty( $key ) || empty( $target_url ) ) {
-            return new WP_Error( 'swift_redirect_required', __( 'Domain, key and target URL are required.', 'swift-redirect' ) );
+            return new WP_Error( 'swift_redirect_required', __( 'Domain, key and target URL are required.', 'swift-redirect-plugin' ) );
         }
 
         if ( ! self::is_valid_domain( $domain ) ) {
-            return new WP_Error( 'swift_redirect_invalid_domain', __( 'Domain contains invalid characters.', 'swift-redirect' ) );
+            return new WP_Error( 'swift_redirect_invalid_domain', __( 'Domain contains invalid characters.', 'swift-redirect-plugin' ) );
         }
 
         if ( ! self::is_valid_path( $key ) ) {
-            return new WP_Error( 'swift_redirect_invalid_path', __( 'Path contains invalid characters.', 'swift-redirect' ) );
+            return new WP_Error( 'swift_redirect_invalid_path', __( 'Path contains invalid characters.', 'swift-redirect-plugin' ) );
         }
 
         if ( ! wp_http_validate_url( $target_url ) ) {
-            return new WP_Error( 'swift_redirect_invalid_url', __( 'Target URL must be a valid URL.', 'swift-redirect' ) );
+            return new WP_Error( 'swift_redirect_invalid_url', __( 'Target URL must be a valid URL.', 'swift-redirect-plugin' ) );
         }
 
         $http_code = isset( $redirect['code'] ) ? absint( $redirect['code'] ) : 301;
@@ -274,7 +281,7 @@ class SF_SwiftRedirectInstance{
         $row_id = isset( $redirect['id'] ) ? absint( $redirect['id'] ) : 0;
 
         if ( $requires_id && 0 === $row_id ) {
-            return new WP_Error( 'swift_redirect_missing_id', __( 'Redirect ID is required.', 'swift-redirect' ) );
+            return new WP_Error( 'swift_redirect_missing_id', __( 'Redirect ID is required.', 'swift-redirect-plugin' ) );
         }
 
         return array(
