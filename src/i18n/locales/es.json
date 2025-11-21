@@ -42,7 +42,8 @@
       "remove-all-redirects": "Eliminar Todas las Redirecciones",
       "upload-file": "Seleccionar Archivo",
       "export-text": "Haz clic para descargar un archivo con tus redirecciones",
-      "search": "Buscar"
+      "search": "Buscar",
+      "reset": "Restablecer"
     },
     "enabled": "Habilitado",
     "disabled": "Deshabilitado",

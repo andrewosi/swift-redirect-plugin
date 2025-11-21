@@ -42,7 +42,8 @@
       "remove-all-redirects": "Poista kaikki ohjaukset",
       "upload-file": "Valitse tiedosto",
       "export-text": "Napsauta ladataksesi tiedoston ohjauksillasi",
-      "search": "Haku"
+      "search": "Haku",
+      "reset": "Nollaa"
     },
     "enabled": "Käytössä",
     "disabled": "Poistettu käytöstä",

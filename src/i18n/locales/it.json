@@ -42,7 +42,8 @@
       "remove-all-redirects": "Elimina Tutti i Reindirizzamenti",
       "upload-file": "Scegli File",
       "export-text": "Clicca per scaricare un file con i tuoi reindirizzamenti",
-      "search": "Cerca"
+      "search": "Cerca",
+      "reset": "Reimposta"
     },
     "enabled": "Abilitato",
     "disabled": "Disabilitato",

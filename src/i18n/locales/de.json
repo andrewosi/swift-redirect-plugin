@@ -42,7 +42,8 @@
       "remove-all-redirects": "Alle Weiterleitungen löschen",
       "upload-file": "Datei auswählen",
       "export-text": "Klicken Sie, um eine Datei mit Ihren Weiterleitungen herunterzuladen",
-      "search": "Suchen"
+      "search": "Suchen",
+      "reset": "Zurücksetzen"
     },
     "enabled": "Aktiviert",
     "disabled": "Deaktiviert",

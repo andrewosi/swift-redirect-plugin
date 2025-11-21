@@ -44,7 +44,8 @@
       "remove-all-redirects": "Delete All Redirects",
       "upload-file": "Choose File",
       "export-text": "Click to download a file with your redirects",
-      "search": "Search"
+      "search": "Search",
+      "reset": "Reset"
     },
     "enabled": "Enabled",
     "disabled": "Disabled",

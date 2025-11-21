@@ -53,6 +53,15 @@
     }
   }
 
+  const resetSearch = async () => {
+    searchQuery.value = ''
+    delete query.value.search
+    query.value.page = 0
+    currentPage.value = 1
+    await classInstance.fetchRedirects(query.value)
+    pages.value = Math.ceil(totalRedirects.value / query.value.limit)
+  }
+
   // bulk actions and selection
   const selectedAction = classInstance.selectedAction
   const bulkActions = classInstance.bulkActions
@@ -166,6 +175,9 @@
           />
           <VaButton @click="performSearch" color="primary">
             {{ t('tables.headings.search') }}
+          </VaButton>
+          <VaButton @click="resetSearch" preset="secondary" outline>
+            {{ t('tables.headings.reset') }}
           </VaButton>
         </div>
         <div v-if="selectedRedirects.length > 10" class="card__bg flex wrap align-start gap-2">

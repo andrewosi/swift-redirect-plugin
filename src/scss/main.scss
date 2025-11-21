@@ -305,3 +305,9 @@ html.va-theme-semi-dark {
     opacity: 1 !important;
   }
 }
+.va-data-table .va-data-table__table.selectable .va-data-table__table-tbody .va-data-table__table-tr:hover td, .va-data-table .va-data-table__table.hoverable .va-data-table__table-tbody .va-data-table__table-tr:hover td {
+  background: var(--va-data-table-hover-color) !important;
+}
+.va-data-table .va-data-table__table.selectable .va-data-table__table-tbody .va-data-table__table-tr:hover td:after, .va-data-table .va-data-table__table.hoverable .va-data-table__table-tbody .va-data-table__table-tr:hover td:after {
+  display: none !important;
+}

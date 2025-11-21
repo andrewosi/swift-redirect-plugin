@@ -46,6 +46,15 @@
     }
   }
 
+  const resetSearch = async () => {
+    searchQuery.value = ''
+    delete query.value.search
+    query.value.page = 0
+    currentPage.value = 1
+    await classInstance.fetchLog404(query.value)
+    pages.value = Math.ceil(totalLog404.value / query.value.limit)
+  }
+
   // Pagination
   const pages = ref(null)
   const currentPage = ref(1)
@@ -134,6 +143,7 @@
             @keyup.enter="performSearch"
           />
           <VaButton @click="performSearch">{{ t('tables.headings.search') }}</VaButton>
+          <VaButton @click="resetSearch" preset="secondary" outline>{{ t('tables.headings.reset') }}</VaButton>
         </div>
         <VaDataTable
           :items="log404Data"
